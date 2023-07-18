@@ -6,14 +6,16 @@ namespace Celeste.Mod.MappingUtils.ModIntegration;
 [ModImportName("FrostHelper")]
 public class FrostHelperAPI
 {
-    public static void LoadIfNeeded()
+    public static bool LoadIfNeeded()
     {
         if (Loaded)
-            return;
+            return true;
 
         typeof(FrostHelperAPI).ModInterop();
 
         Loaded = true;
+
+        return true;
     }
 
     public static bool Loaded { get; private set; }
@@ -27,4 +29,5 @@ public class FrostHelperAPI
     public static Action<Entity, Color> SetCustomSpinnerBorderColor = null!;
 
     public static Func<string, Type> EntityNameToType = null!;
+    public static Func<string, Type?> EntityNameToTypeOrNull = null!;
 }

@@ -31,7 +31,6 @@ public class MainMappingUtils : ImGuiHandler
 
         if (Engine.Scene is not Level level || !Enabled)
         {
-            //Engine.Instance.IsMouseVisible = false;
             return;
         }
 
@@ -49,10 +48,7 @@ public class MainMappingUtils : ImGuiHandler
             ImGui.EndTabBar();
         }
 
-
         ImGui.End();
-
-        //Engine.Instance.IsMouseVisible = true;
     }
 
     static Color Entities_CustomSpinnerTint = Color.White;
@@ -103,6 +99,12 @@ public class MainMappingUtils : ImGuiHandler
         }
 
         ImGui.DragFloat("Fly Speed", ref Fly.SpeedMult, 0.1f, 0.1f);
+
+        if (SpawnEntity.Available && ImGuiExt.Combo("Spawn Entity", ref SpawnEntity.LastSummoned, SpawnEntity.SummonableSIDs.Value, (s) => s, SpawnEntity.ComboCache,
+            "Spawns an entity of the selected type next to the player"))
+        {
+            SpawnEntity.Spawn(level, SpawnEntity.LastSummoned);
+        }
 
         ImGui.EndTabItem();
     }
@@ -173,6 +175,29 @@ public class MainMappingUtils : ImGuiHandler
         {
             level.SnapColorGrade(colorgrade);
         }
+
+        #region Camera
+        ImGui.Separator();
+        ImGui.Text("Camera");
+
+        var cam = level.Camera;
+        // match camera offset triggers
+        var offset = new NumVector2(level.CameraOffset.X / 48f, level.CameraOffset.Y / 32f);
+
+        ImGui.SetNextItemWidth(ItemWidth);
+        if (ImGui.DragFloat2("Offset", ref offset, 0.1f))
+        {
+            level.CameraOffset.X = offset.X * 48f;
+            level.CameraOffset.Y = offset.Y * 32f;
+        }
+        ImGui.SameLine();
+        if (ImGui.Button("Reset"))
+        {
+            level.CameraOffset = Vector2.Zero;
+        }
+
+        #endregion
+
 
         ImGui.EndTabItem();
     }

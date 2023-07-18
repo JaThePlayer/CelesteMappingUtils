@@ -203,9 +203,19 @@ public static class StylegroundViewTab
         }
 
         ImGui.SameLine();
+        if (!style.Visible)
+        {
+            ImGui.BeginDisabled();
+        }
+
         ImGui.Text(GetName(style));
 
         RenderOtherTabs(style);
+
+        if (!style.Visible)
+        {
+            ImGui.EndDisabled();
+        }
     }
 
     private static void RenderOtherTabs(Backdrop style)

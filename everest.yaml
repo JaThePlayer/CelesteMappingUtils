@@ -1,11 +1,11 @@
 - Name: MappingUtils
-  Version: 1.1.0
+  Version: 1.2.0
   DLL: bin/MappingUtils.dll
   Dependencies:
     - Name: EverestCore
-      Version: 1.4054.0
+      Version: 1.4134.0
     - Name: ImGuiHelper
       Version: 0.1.1
   OptionalDependencies:
     - Name: FrostHelper
-      Version: 1.42.0
+      Version: 1.44.0

@@ -2,18 +2,18 @@
 using Microsoft.Xna.Framework.Graphics;
 using System.Collections.Generic;
 
-namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
+namespace Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
 
-public static class StylegroundViewTab
+public class StylegroundViewTab : Tab
 {
-    private static Backdrop? Selection;
+    public override string Name => "Stylegrounds";
 
-    public const int ItemWidth = MainMappingUtils.ItemWidth;
+    private static Backdrop? Selection;
 
     public static List<string> BlendModes = null!;
     private static ComboCache<string> BlendModeCombo = new();
 
-    public static void Stylegrounds(Level level)
+    public override void Render(Level level)
     {
         if (BlendModes is null)
         {
@@ -25,9 +25,6 @@ public static class StylegroundViewTab
                 BlendModes.Add("reversesubtract");
             }
         }
-
-        if (!ImGui.BeginTabItem("Stylegrounds"))
-            return;
 
         if (Selection is { } s)
         {
@@ -53,59 +50,17 @@ public static class StylegroundViewTab
             ImGui.SameLine();
             ImGui.Checkbox("LoopY", ref s.LoopY);
 
-            if (s is Parallax p)
+            if (FrostHelperAPI.GetBackdropBlendState is { } getState)
             {
-                var blendStateName = p.BlendState.Name switch
-                {
-                    "BlendState.AlphaBlend" => "alphablend",
-                    "BlendState.Additive" => "additive",
-                    _ => null
-                };
-
-                if (blendStateName is null && IntegrationUtils.EeveeHelperLoaded.Value)
-                {
-                    var state = p.BlendState;
-                    if (state is
-                        {
-                            ColorBlendFunction: BlendFunction.Add,
-                            ColorSourceBlend: Blend.DestinationColor,
-                            ColorDestinationBlend: Blend.Zero
-                        })
-                    {
-                        blendStateName = "multiply";
-                    }
-                    else if (state is
-                    {
-                        ColorSourceBlend: Blend.One,
-                        ColorDestinationBlend: Blend.One,
-                        ColorBlendFunction: BlendFunction.ReverseSubtract,
-                        AlphaSourceBlend: Blend.One,
-                        AlphaDestinationBlend: Blend.One,
-                        AlphaBlendFunction: BlendFunction.Add
-                    })
-                    {
-                        blendStateName = "subtract";
-                    }
-                    else if (state is
-                    {
-                        ColorSourceBlend: Blend.One,
-                        ColorDestinationBlend: Blend.One,
-                        ColorBlendFunction: BlendFunction.Subtract,
-                        AlphaSourceBlend: Blend.One,
-                        AlphaDestinationBlend: Blend.One,
-                        AlphaBlendFunction: BlendFunction.Add
-                    })
-                    {
-                        blendStateName = "reversesubtract";
-                    }
-                }
+                var blendState = getState(s);
+                string? blendStateName = GetBlendStateName(blendState);
 
                 if (blendStateName is { })
                 {
                     ImGui.SetNextItemWidth(ItemWidth);
                     if (ImGuiExt.Combo("Blend Mode", ref blendStateName, BlendModes, x => x, BlendModeCombo))
                     {
-                        p.BlendState = blendStateName switch
+                        FrostHelperAPI.SetBackdropBlendState(s, blendStateName switch
                         {
                             "alphablend" => BlendState.AlphaBlend,
                             "additive" => BlendState.Additive,
@@ -113,20 +68,70 @@ public static class StylegroundViewTab
                             "reversesubtract" => EeveeHelper_ReverseSubtract,
                             "multiply" => EeveeHelper_Multiply,
                             _ => BlendState.Opaque
-                        };
+                        });
                     }
                 }
-            } else
-            {
-                // account for the blend mode option for parallaxes to make the ui not jump
-                ImGui.NewLine();
+                else
+                {
+                    // account for the blend mode option for parallaxes to make the ui not jump
+                    ImGui.NewLine();
+                }
             }
         }
 
         RenderStyleList(level);
+    }
 
+    private static string? GetBlendStateName(BlendState? blendState)
+    {
+        if (blendState == null)
+            return null;
 
-        ImGui.EndTabItem();
+        var blendStateName = blendState.Name switch
+        {
+            "BlendState.AlphaBlend" => "alphablend",
+            "BlendState.Additive" => "additive",
+            _ => null
+        };
+
+        if (blendStateName is null && IntegrationUtils.EeveeHelperLoaded.Value)
+        {
+            if (blendState is
+                {
+                    ColorBlendFunction: BlendFunction.Add,
+                    ColorSourceBlend: Blend.DestinationColor,
+                    ColorDestinationBlend: Blend.Zero
+                })
+            {
+                blendStateName = "multiply";
+            }
+            else if (blendState is
+            {
+                ColorSourceBlend: Blend.One,
+                ColorDestinationBlend: Blend.One,
+                ColorBlendFunction: BlendFunction.ReverseSubtract,
+                AlphaSourceBlend: Blend.One,
+                AlphaDestinationBlend: Blend.One,
+                AlphaBlendFunction: BlendFunction.Add
+            })
+            {
+                blendStateName = "subtract";
+            }
+            else if (blendState is
+            {
+                ColorSourceBlend: Blend.One,
+                ColorDestinationBlend: Blend.One,
+                ColorBlendFunction: BlendFunction.Subtract,
+                AlphaSourceBlend: Blend.One,
+                AlphaDestinationBlend: Blend.One,
+                AlphaBlendFunction: BlendFunction.Add
+            })
+            {
+                blendStateName = "reversesubtract";
+            }
+        }
+
+        return blendStateName;
     }
 
     private static BlendState EeveeHelper_ReverseSubtract = new BlendState

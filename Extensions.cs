@@ -69,4 +69,51 @@ internal static class Extensions
             return ordered.ThenByDescending(selector);
         return self.OrderByDescending(selector);
     }
+
+    // Same as ToDictionary, but doesn't crash if keys repeat.
+    public static Dictionary<TKey, TValue> ToDictionarySafe<TFrom, TKey, TValue>(this IEnumerable<TFrom> self, Func<TFrom, TKey> keySelector, Func<TFrom, TValue> valueSelector, 
+        IEqualityComparer<TKey>? comparer = null, bool ignoreExceptions = false)
+        where TKey : notnull
+    {
+        var dict = new Dictionary<TKey, TValue>(comparer);
+        foreach (var item in self)
+        {
+            if (ignoreExceptions)
+            {
+                try
+                {
+                    dict[keySelector(item)] = valueSelector(item);
+                } catch { }
+            } else
+            {
+                dict[keySelector(item)] = valueSelector(item);
+            }
+            
+        }
+
+        return dict;
+    }
+
+    public static IEnumerable<(TKey, TValue)> MergeBy<TKey, TInner, TValue>(this IEnumerable<(TKey, TValue)> self, Func<TKey, TInner> keySelector, Func<TValue, TValue, TValue> merger)
+        where TInner : notnull
+        where TKey : notnull
+    {
+        var dict = new Dictionary<TInner, (TKey, TValue)>();
+        foreach (var (k, val) in self)
+        {
+            var key = keySelector(k);
+            if (dict.TryGetValue(key, out var existing))
+            {
+                dict[key] = (existing.Item1, merger(existing.Item2, val));
+            } else
+            {
+                dict[key] = (k, val);
+            }
+        }
+
+        foreach (var (_, item) in dict)
+        {
+            yield return (item.Item1, item.Item2);
+        }
+    }
 }

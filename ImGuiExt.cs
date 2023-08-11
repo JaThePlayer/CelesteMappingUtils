@@ -26,6 +26,16 @@ public static class ImGuiExt
         return val;
     }
 
+    public static void AddTooltip(string? tooltip)
+    {
+        if (tooltip is { } && ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.Text(tooltip);
+            ImGui.EndTooltip();
+        }
+    }
+
     public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip = null)
     {
         var colorHex = ColorHelper.ToString(color, format);

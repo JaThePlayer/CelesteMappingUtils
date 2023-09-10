@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <TargetFramework>net7.0</TargetFramework>
@@ -9,6 +9,7 @@
         <Nullable>enable</Nullable>
         <Optimize>True</Optimize>
 
+        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste-core\Celeste.exe')">..\..\..\Celeste-core</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\Celeste.exe')">..\..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste.exe')">..\..\..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
@@ -22,9 +23,9 @@
     </ItemDefinitionGroup>
 
     <ItemGroup>
-        <PackageReference Include="MonoMod" Version="22.1.4.3" PrivateAssets="all" ExcludeAssets="runtime" />
-        <PackageReference Include="MonoMod.RuntimeDetour" Version="22.1.4.3" PrivateAssets="all" ExcludeAssets="runtime" />
-        <PackageReference Include="MonoMod.Utils" Version="22.1.4.3" PrivateAssets="all" ExcludeAssets="runtime" />
+
+        <PackageReference Include="Mono.Cecil" Version="0.11.5" />
+
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" PrivateAssets="all" ExcludeAssets="runtime" />
         <PackageReference Include="ImGui.NET" Version="1.89.4" />
 
@@ -35,8 +36,17 @@
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="$(CelestePrefix)\Celeste.exe">
+        <Reference Include="$(CelestePrefix)\Celeste.dll">
             <Private>false</Private>
+        </Reference>
+        <Reference Include="$(CelestePrefix)\MonoMod.exe">
+          <Private>false</Private>
+        </Reference>
+        <Reference Include="$(CelestePrefix)\MonoMod.RuntimeDetour.dll">
+          <Private>false</Private>
+        </Reference>
+        <Reference Include="$(CelestePrefix)\MonoMod.Utils.dll">
+          <Private>false</Private>
         </Reference>
         <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll">
             <Private>false</Private>

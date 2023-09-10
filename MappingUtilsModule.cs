@@ -1,5 +1,4 @@
 ﻿using Celeste.Mod.MappingUtils.ImGuiHandlers;
-using System;
 
 namespace Celeste.Mod.MappingUtils;
 

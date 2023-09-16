@@ -4,6 +4,7 @@ using MonoMod.Cil;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 
@@ -105,7 +106,7 @@ internal class MethodDiff
             else
             {
                 // search if the instruction we're looking for even exists
-                // because there could be simillar code later in the function, we'll limit the search to the next 10 instructions (random number)
+                // because there could be simillar code later in the function, we'll limit the search to the next few instructions (random number)
                 if (!finInstrs.Skip(fi).Take(20).Any(i => InstrsEqual(i, origInstr.Instruction)))
                 {
                     diff.Add(new(ElementType.Removed, origInstr.Instruction, def, origInstr.AdditionalInfo));
@@ -210,51 +211,70 @@ internal class MethodDiff
         }
     }
 
-    public void PrintToConsole()
+    private void PrintImpl(Action<string?> print, Action<ConsoleColor> setColor, Action resetColor)
     {
         try
         {
-            Console.WriteLine();
-            Console.WriteLine($"IL Diff: {Method.GetID()}");
+            print($"IL Diff: {Method.GetID()}\n");
             foreach (var i in _Instructions)
             {
                 switch (i.Type)
                 {
                 case ElementType.Added:
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.Write("+ ");
+                    setColor(ConsoleColor.Green);
+                    print("+ ");
                     break;
                 case ElementType.Removed:
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.Write("- ");
+                    setColor(ConsoleColor.Red);
+                    print("- ");
                     break;
                 default:
-                    Console.ResetColor();
-                    Console.Write("  ");
+                    resetColor();
+                    print("  ");
                     break;
                 }
 
-                Console.Write(i.Instruction.FixedToString());
+                print(i.Instruction.FixedToString());
 
                 if (i.Type != ElementType.Unchanged && i.Source is { } source)
                 {
-                    Console.ForegroundColor = ConsoleColor.Yellow;
-                    Console.Write($" @ {source.GetID(simple: true)}");
+                    setColor(ConsoleColor.Yellow);
+                    print($" @ {source.GetID(simple: true)}");
                 }
 
-                Console.WriteLine();
+                print("\n");
 
                 if (i.AdditionalInfo is { Count: > 0 } info)
                 {
-                    Console.ForegroundColor = ConsoleColor.DarkYellow;
+                    setColor(ConsoleColor.DarkYellow);
                     foreach (var item in info)
                     {
-                        Console.WriteLine($"  |-> {item}");
+                        print($"  |-> {item}\n");
                     }
                 }
 
-                Console.ResetColor();
+                resetColor();
             }
+        }
+        finally
+        {
+            resetColor();
+        }
+    }
+
+    public void PrintToStream(Stream stream)
+    {
+        using var writer = new StreamWriter(stream);
+
+        PrintImpl(writer.Write, setColor: (c) => { }, resetColor: () => { });
+    }
+
+    public void PrintToConsole()
+    {
+        try
+        {
+            Console.WriteLine();
+            PrintImpl(Console.Write, (c) => Console.ForegroundColor = c, Console.ResetColor);
         }
         finally
         {

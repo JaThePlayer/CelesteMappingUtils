@@ -62,6 +62,29 @@ internal class MetadataTab : Tab
         }
 
         #endregion
+
+        if (ExtVariantsAPI.Available)
+        {
+            ImGui.Separator();
+            ImGui.Text("Extended Variants");
+
+            DrawFloatVariant(ExtVariantsAPI.Variant.BackgroundBrightness, "Background Brightness");
+            DrawFloatVariant(ExtVariantsAPI.Variant.BackgroundBlurLevel, "Background Blur");
+            DrawFloatVariant(ExtVariantsAPI.Variant.BlurLevel, "Blur");
+            DrawFloatVariant(ExtVariantsAPI.Variant.ForegroundEffectOpacity, "Foreground Effect Opacity");
+
+            static void DrawFloatVariant(ExtVariantsAPI.Variant variant, string name)
+            {
+                if (ExtVariantsAPI.GetVariantFloat(variant) is {} v)
+                {
+                    ImGui.SetNextItemWidth(ItemWidth);
+                    if (ImGui.DragFloat(name, ref v, 0.01f, 0f))
+                    {
+                        ExtVariantsAPI.SetVariant(variant, v, revertOnDeath: false);
+                    }
+                }
+            }
+        }
     }
 
     static List<string>? ColorGrades;

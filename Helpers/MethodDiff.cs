@@ -28,55 +28,41 @@ internal class MethodDiff
 
     private List<Instr> _Instructions;
 
+    internal List<string> AppliedHookNames;
+
     public MethodDiff(MethodBase orig)
     {
         Method = orig;
         var hooked = DetourManager.GetDetourInfo(orig).ILHooks;
+        AppliedHookNames = hooked.Select(h => h.ManipulatorMethod.GetID(simple: true)).ToList();
 
-        using (var origDef = new DynamicMethodDefinition(orig))
-            _Instructions = origDef.Definition.Body.Instructions.Select(instr => new Instr(ElementType.Unchanged, instr, null, new(0))).ToList();
+        using var cloneDef = new DynamicMethodDefinition(orig);
+        using var cloneDefContext = new ILContext(cloneDef.Definition);
 
-        if (hooked is { })
+        _Instructions = cloneDef.Definition.Body.Instructions.Select(instr => new Instr(ElementType.Unchanged, instr, null, new(0))).ToList();
+
+        if (hooked is not { })
+            return;
+
+        foreach (var hook in hooked)
         {
-            var toUndo = new List<ILHook>();
-            var hookList = hooked.ToList();
-
-            // Undo all hooks, then apply them one-by-one while also storing the instructions after each hook
-
-            foreach (var hook in hookList)
-                hook.Undo();
+            // ILHookInfo only gives us public access to the method the manipulator delegate calls.
+            // We need to retrieve the actual delegate passed to the original IL hook, as the manipulator method it calls may be non-static...
+            // Time to use monomod to access monomod internals :)
+            var hookState = new DynamicData(hook).Get("hook")!;
+            var manipulator = new DynamicData(hookState).Get<ILContext.Manipulator>("Manip")!;
 
             try
             {
-                foreach (var hook in hookList)
-                {
-                    Mono.Collections.Generic.Collection<Instruction> instrs = null!;
-                    var h = new ILHook(orig, (ILContext ctx) =>
-                    {
-                        // we need to retrieve the actual delegate passed to the original IL hook, as the method it calls may be non-static...
-                        // time to use monomod to access monomod internals :)
-                        var hookState = new DynamicData(hook).Get("hook")!;
-                        var manipulator = new DynamicData(hookState).Get<ILContext.Manipulator>("Manip")!;
-                        manipulator(ctx);
+                manipulator(cloneDefContext);
+                var instrs = cloneDefContext.Instrs;
 
-                        instrs = ctx.Instrs;
-                    });
-                    h.Apply();
-                    toUndo.Add(h);
-
-                    _Instructions = CreateDiff(_Instructions, instrs, hook.ManipulatorMethod);
-                }
+                _Instructions = CreateDiff(_Instructions, instrs, hook.ManipulatorMethod);
             }
             catch (Exception ex)
             {
-                Logger.LogDetailed(ex, "MappingUtils.ILHookDiffer");
+                Logger.Log("MappingUtils.ILHookDiffer", $"Failed to apply IL hook {hook.ManipulatorMethod.GetID()}: {ex}");
             }
-
-            foreach (var item in toUndo)
-                item.Dispose();
-
-            foreach (var item in hookList)
-                item.Apply();
         }
     }
 
@@ -107,7 +93,16 @@ internal class MethodDiff
             {
                 // search if the instruction we're looking for even exists
                 // because there could be simillar code later in the function, we'll limit the search to the next few instructions (random number)
-                if (!finInstrs.Skip(fi).Take(20).Any(i => InstrsEqual(i, origInstr.Instruction)))
+                bool isDeleted = true;
+                for (int i = fi; i < finInstrs.Count && i < fi + 15; i++)
+                {
+                    if (InstrsEqual(finInstrs[i], origInstr.Instruction))
+                    {
+                        isDeleted = false;
+                        break;
+                    }
+                }
+                if (isDeleted)
                 {
                     diff.Add(new(ElementType.Removed, origInstr.Instruction, def, origInstr.AdditionalInfo));
                     oi++;

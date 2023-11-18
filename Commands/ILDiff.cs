@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
@@ -36,8 +37,6 @@ public static class ILDiff
         Directory.CreateDirectory(directory);
         var timestampFilename = $"{time.Ticks}.txt";
 
-        //ConcurrentDictionary<MethodBase, ManagedDetourState> detourStates
-
         var db = new DBFile
         {
             Time = time,
@@ -50,6 +49,7 @@ public static class ILDiff
                 db.Mods.Add(new(module.Metadata.Name, module.Metadata.VersionString));
         }
 
+        //ConcurrentDictionary<MethodBase, ManagedDetourState> detourStates
         var detourStates = (IDictionary)DetourManager_detourStates.Value.GetValue(null)!;
         foreach (MethodBase key in detourStates.Keys)
         {
@@ -58,7 +58,8 @@ public static class ILDiff
 
             try
             {
-                var methodName = $"{key.DeclaringType?.FullName ?? $"unk-{Guid.NewGuid()}"}.{key.Name}";
+                //var methodName = $"{key.DeclaringType?.FullName ?? $"unk-{Guid.NewGuid()}"}.{key.Name}";
+                var methodName = GetMethodNameForDB(key);
                 var methodNameAsDirName = NameAsValidFilename(methodName);
                 var dir = Path.Combine(directory, methodNameAsDirName);
                 Directory.CreateDirectory(dir);
@@ -84,7 +85,7 @@ public static class ILDiff
                 using var fileListWriteStream = fileListFile.Open(FileMode.Create, FileAccess.Write);
                 JsonSerializer.Serialize(fileListWriteStream, fileList);
 
-                db.Methods.Add(new(methodName, methodNameAsDirName));
+                db.Methods.Add(new(methodName, methodNameAsDirName, diff.AppliedHookNames));
 
             } catch (Exception ex)
             {
@@ -96,6 +97,62 @@ public static class ILDiff
             //diff.PrintToConsole();
         }
     }
+
+    public static string GetMethodNameForDB(this MethodBase method)
+    {
+        while (method is MethodInfo mi && method.IsGenericMethod && !method.IsGenericMethodDefinition)
+            method = mi.GetGenericMethodDefinition();
+
+        var builder = new StringBuilder();
+
+        if (method.DeclaringType != null)
+            builder.Append(method.DeclaringType!.FullName?.Replace("+", "/", StringComparison.Ordinal)).Append(".");
+
+        builder.Append(method.Name);
+
+        if (method.ContainsGenericParameters)
+        {
+            builder.Append('<');
+            Type[] arguments = method.GetGenericArguments();
+            for (var i = 0; i < arguments.Length; i++)
+            {
+                if (i > 0)
+                    builder.Append(',');
+                builder.Append(arguments[i].Name);
+            }
+            builder.Append('>');
+        }
+
+        builder.Append('(');
+
+        ParameterInfo[] parameters = method.GetParameters();
+        for (var i = 0; i < parameters.Length; i++)
+        {
+            ParameterInfo parameter = parameters[i];
+            if (i > 0)
+                builder.Append(',');
+
+            bool defined;
+            try
+            {
+                defined = parameter.GetCustomAttributes(typeof(ParamArrayAttribute), false).Length != 0;
+            }
+            catch (NotSupportedException)
+            {
+                // Newer versions of Mono are stupidly strict and like to throw a NotSupportedException on DynamicMethod args.
+                defined = false;
+            }
+            if (defined)
+                builder.Append("...,");
+
+            builder.Append(parameter.ParameterType.Name);
+        }
+
+        builder.Append(')');
+
+        return builder.ToString();
+    }
+
 
     private static string NameAsValidFilename(string name)
     {
@@ -129,7 +186,8 @@ public static class ILDiff
 
         public record Method(
             [property: JsonPropertyName("name")] string Name,
-            [property: JsonPropertyName("directoryName")] string DirectoryName
+            [property: JsonPropertyName("directoryName")] string DirectoryName,
+            [property: JsonPropertyName("hooks")] List<string> Hooks // list of all hooks applied to this method
         );
 
         public record Mod(

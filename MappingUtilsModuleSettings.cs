@@ -30,26 +30,9 @@ public class MappingUtilsModuleSettings : EverestModuleSettings
         public string MethodName { get; set; } = null!;
         public string Name { get; set; } = null!;
 
-        public MethodInfo? FindMethod()
+        public MethodBase? FindMethod()
         {
-            FrostHelperAPI.LoadIfNeeded();
-
-            if (FrostHelperAPI.EntityNameToTypeOrNull is not { } nameToType)
-            {
-                return null;
-            }
-
-            if (nameToType(TypeName) is not { } type)
-            {
-                Logger.Log(LogLevel.Warn, "MappingUtils.Profiler", $"Couldn't find type {TypeName} to use for settings-provided arbitrary hook!");
-                return null;
-            }
-
-            if (type.GetMethod(MethodName, BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public) is not { } method)
-            {
-                Logger.Log(LogLevel.Warn, "MappingUtils.Profiler", $"Couldn't find method {TypeName}.{MethodName} to use for settings-provided arbitrary hook!");
-                return null;
-            }
+            var method = MappingUtilsModule.FindMethod(TypeName, MethodName, out var ambiguousMatch);
 
             return method;
         }

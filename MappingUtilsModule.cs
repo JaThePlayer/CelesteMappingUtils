@@ -1,4 +1,8 @@
-﻿using Celeste.Mod.MappingUtils.ImGuiHandlers;
+﻿using System.Linq;
+using System.Reflection;
+using Celeste.Mod.Helpers;
+using Celeste.Mod.MappingUtils.ImGuiHandlers;
+using Celeste.Mod.MappingUtils.ModIntegration;
 
 namespace Celeste.Mod.MappingUtils;
 
@@ -47,4 +51,74 @@ public class MappingUtilsModule : EverestModule
     }
 
     public static Action? OnUnload;
+
+    public static MethodBase? FindMethod(string typeName, string methodName, out bool ambiguousMatch)
+    {
+        ambiguousMatch = false;
+        
+        FrostHelperAPI.LoadIfNeeded();
+
+        Type? type = null;
+
+        if (FrostHelperAPI.EntityNameToTypeOrNull is { } nameToType)
+        {
+            type = nameToType(typeName);
+        }
+
+        type ??= FakeAssembly.GetFakeEntryAssembly().GetType(typeName);
+        
+        if (type is null)
+        {
+            Log(LogLevel.Warn, "MappingUtils", $"Couldn't find type {typeName}!");
+            return null;
+        }
+
+        MethodBase? method = null;
+
+        try
+        {
+            if (methodName is "ctor" or ".ctor")
+            {
+                var ctors = type.GetConstructors(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Public);
+
+                method = ctors.FirstOrDefault();
+            }
+
+            method ??= type.GetMethod(methodName,
+                BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.Public);
+        }
+        catch (AmbiguousMatchException ex)
+        {
+            ambiguousMatch = true;
+            Log(LogLevel.Warn, "MappingUtils", $"Couldn't find method {typeName}.{methodName}, because there are multiple methods of the same name.");
+            return null;
+        }
+
+        
+        if (method is null)
+        {
+            Log(LogLevel.Warn, "MappingUtils", $"Couldn't find method {typeName}.{methodName}!");
+            return null;
+        }
+
+        return method;
+    }
+
+    public static void Log(LogLevel level, string tag, string text)
+    {
+        Logger.Log(level, tag, text);
+
+        if (WriteToIngameLog)
+        {
+            Engine.Commands.Log($"[{tag}] {text}", level switch
+            {
+                LogLevel.Error => Color.Red,
+                LogLevel.Warn => Color.Yellow,
+                LogLevel.Debug => Color.LightGray,
+                _ => Color.White
+            });
+        }
+    }
+
+    public static bool WriteToIngameLog { get; set; } = false;
 }

@@ -4,7 +4,6 @@ using Celeste.Mod.MappingUtils.ModIntegration;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -12,6 +11,7 @@ using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Celeste.Mod.MappingUtils.ImGuiHandlers;
 
 namespace Celeste.Mod.MappingUtils.Commands;
 
@@ -20,19 +20,26 @@ public static class ILDiff
     [Command("ildiff", "[Mapping Utils] Creates a diff of the IL of a method and its IL hooks, and logs it to the console.")]
     public static void Diff(string typeFullName, string methodName)
     {
-        FrostHelperAPI.LoadIfNeeded();
+        MappingUtilsModule.WriteToIngameLog = true;
+        
+        var m = MappingUtilsModule.FindMethod(typeFullName, methodName, out _);
+        if (m is { })
+        {
+            var diff = new MethodDiff(m);
 
-        var t = FrostHelperAPI.EntityNameToTypeOrNull(typeFullName) ?? FakeAssembly.GetFakeEntryAssembly().GetType(typeFullName) ?? throw new Exception($"Couldn't find type {typeFullName}");
-        var m = t.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static).FirstOrDefault(t => t.Name == methodName) ?? throw new Exception($"Couldn't find method {methodName} on type {typeFullName}");
+            diff.PrintToConsole();
+            ImGuiManager.Handlers.Add(new IlDiffView(diff));
+        }
 
-        var diff = new MethodDiff(m);
-
-        diff.PrintToConsole();
+        MappingUtilsModule.WriteToIngameLog = false;
     }
 
+    private const string DiffAllTag = "MappingUtils.ILDiffAll";
+    
     [Command("ildiff_all", "[Mapping Utils] IL diffs each method in the game, writing the result to the given directory")]
     public static void DiffAll(string directory)
     {
+        MappingUtilsModule.WriteToIngameLog = true;
         var time = DateTime.Now;
         Directory.CreateDirectory(directory);
         var timestampFilename = $"{time.Ticks}.txt";
@@ -64,7 +71,7 @@ public static class ILDiff
                 var dir = Path.Combine(directory, methodNameAsDirName);
                 Directory.CreateDirectory(dir);
 
-                Console.WriteLine($"Dumping {key.GetID()} to {dir}");
+                MappingUtilsModule.Log(LogLevel.Info, DiffAllTag, $"Dumping {key.GetID()} to {dir}");
 
                 using var ilFileStream = File.Create(Path.Combine(dir, timestampFilename));
                 var diff = new MethodDiff(key);
@@ -89,13 +96,14 @@ public static class ILDiff
 
             } catch (Exception ex)
             {
-                Logger.Log(LogLevel.Warn, "MappingUtils.ILDiffAll", $"Failed to dump: {key.GetID()}: {ex}");
+                MappingUtilsModule.Log(LogLevel.Warn, DiffAllTag, $"Failed to dump: {key.GetID()}: {ex}");
             }
 
             using var dbStream = File.Open(Path.Combine(directory, "info.json"), FileMode.Create, FileAccess.Write);
             JsonSerializer.Serialize(dbStream, db);
-            //diff.PrintToConsole();
         }
+        
+        MappingUtilsModule.WriteToIngameLog = false;
     }
 
     public static string GetMethodNameForDB(this MethodBase method)

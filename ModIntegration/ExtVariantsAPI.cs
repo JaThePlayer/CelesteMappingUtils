@@ -27,7 +27,6 @@ public static class ExtVariantsAPI
     public static bool Available => LoadIfNeeded() && GetCurrentVariantValue is { }; 
 
     // object GetCurrentVariantValue(string variantString)
-
     public static Func<string, object>? GetCurrentVariantValue;
     
     //TriggerVariant(string variantString, object newValue, bool revertOnDeath)

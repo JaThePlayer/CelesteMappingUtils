@@ -278,6 +278,7 @@ internal class ProfilingTab : Tab
 
         if (ImGui.InputInt("Refresh Rate (frames)", ref ClearFrameCount).WithTooltip("How often the table below should get refreshed.\nIf this is above 1, the shown results will be an average."))
         {
+            ClearFrameCount = Math.Max(ClearFrameCount, 1);
             FramesUntilClear = ClearFrameCount;
             CurrentInfo = new();
             DisplayedInfo = CurrentInfo;
@@ -298,7 +299,8 @@ internal class ProfilingTab : Tab
             Never compare the FPS Score between different computers, as its hardware-dependent.
             """);
 
-        if (!ImGui.BeginTable("Styles", 8, flags))
+        const int columnCount = 8;
+        if (!ImGui.BeginTable("Styles", columnCount, flags))
         {
             return;
         }
@@ -314,13 +316,13 @@ internal class ProfilingTab : Tab
 
         //ImGui.TableHeadersRow();
         ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
-        int columns_count = ImGui.TableGetColumnCount();
-        for (int column_n = 0; column_n < columns_count; column_n++)
+        int columns = ImGui.TableGetColumnCount();
+        for (int columnN = 0; columnN < columns; columnN++)
         {
-            if (!ImGui.TableSetColumnIndex(column_n))
+            if (!ImGui.TableSetColumnIndex(columnN))
                 continue;
 
-            var name = ImGui.TableGetColumnName(column_n);
+            var name = ImGui.TableGetColumnName(columnN);
 
             ImGui.TableHeader(name);
 
@@ -329,20 +331,31 @@ internal class ProfilingTab : Tab
                 ImGuiExt.AddTooltip(tooltip);
             }
         }
+        
+        ImGui.TableSetupScrollFreeze(columnCount, 1);
 
         foreach (var (name, info) in orderedInfo)
         {
             ImGui.TableNextRow();
             ImGui.TableNextColumn();
 
+            var declaringType = name.Match(
+                (Type t) => t,
+                (string str) => MappingUtilsModule.Settings.ProfilerHookedMethods.FirstOrDefault(m => m.Name == str)?.FindMethod()?.DeclaringType
+            );
+            
             ImGui.Text(GetName(name));
+            if (declaringType is { })
+            {
+                ImGuiExt.AddDecompilationTooltip(declaringType);
+            }
             if (ImGui.IsItemHovered())
             {
                 ImGui.BeginTooltip();
 
                 var fullName = name.Match(
                     t => t.FullName,
-                    str => MappingUtilsModule.Settings.ProfilerHookedMethods.FirstOrDefault(m => m.Name == str)?.FindMethod().GetID() ?? "unknown"
+                    str => MappingUtilsModule.Settings.ProfilerHookedMethods.FirstOrDefault(m => m.Name == str)?.FindMethod()?.GetID() ?? "unknown"
                 );
 
                 ImGui.Text($"Full Name: {fullName}");
@@ -361,31 +374,31 @@ internal class ProfilingTab : Tab
             RenderPercent(info.TotalTime, totalTime, 2f);
             RenderPercent(info.TotalTime, frameTime * ClearFrameCount, 20f);
 
-            Render(info.TotalTime, frameTime * ClearFrameCount);
-            Render(info.Update.Time, frameTime * ClearFrameCount);
-            Render(info.Render.Time, frameTime * ClearFrameCount);
-            Render(info.BeforeRender.Time, frameTime * ClearFrameCount);
+            RenderTime(info.TotalTime, frameTime * ClearFrameCount);
+            RenderTime(info.Update.Time, frameTime * ClearFrameCount);
+            RenderTime(info.Render.Time, frameTime * ClearFrameCount);
+            RenderTime(info.BeforeRender.Time, frameTime * ClearFrameCount);
 
             static void RenderPercent(TimeSpan time, TimeSpan totalTime, float colorMult)
             {
-                const string Format = "0.0%\\%";
+                const string format = "0.0%\\%";
 
                 var p = time / totalTime;
 
                 var color = Color.Lerp(Color.White, Color.Red, (float)p * colorMult);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), p.ToString(Format, CultureInfo.InvariantCulture));
+                ImGui.TextColored(color.ToNumVec4(), p.ToString(format, CultureInfo.InvariantCulture));
             }
 
-            static void Render(TimeSpan time, TimeSpan totalTime)
+            static void RenderTime(TimeSpan time, TimeSpan totalTime)
             {
-                const string Format = "0.###";
+                const string format = "0.###";
 
                 var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), (time.TotalMilliseconds / ClearFrameCount).ToString(Format));
+                ImGui.TextColored(color.ToNumVec4(), (time.TotalMilliseconds / ClearFrameCount).ToString(format));
             }
         }
 

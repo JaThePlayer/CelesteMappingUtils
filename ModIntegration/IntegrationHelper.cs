@@ -26,7 +26,7 @@ internal static class IntegrationUtils
         return false;
     }
 
-    public static Lazy<bool> EeveeHelperLoaded = new(() => TryGetModule(new()
+    public static readonly Lazy<bool> EeveeHelperLoaded = new(() => TryGetModule(new()
     {
         Name = "EeveeHelper",
         Version = new(1, 5, 3),

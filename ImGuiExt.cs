@@ -1,7 +1,9 @@
 ﻿using Celeste.Mod.MappingUtils.Helpers;
-using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using Celeste.Mod.MappingUtils.ImGuiHandlers;
+using MonoMod.Utils;
 
 namespace Celeste.Mod.MappingUtils;
 
@@ -124,6 +126,35 @@ public static class ImGuiExt
         vec = new(nv.X, nv.Y);
 
         return ret;
+    }
+
+    public static void DecompilableMethod(MethodBase method)
+    {
+        ImGui.TreeNodeEx(method.GetID(simple: true) ?? "", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+
+        if (method.DeclaringType is not { } declaringType)
+            return;
+        
+        AddDecompilationTooltip(declaringType);
+    }
+    
+    public static void DecompilableType(Type type)
+    {
+        ImGui.TreeNodeEx(type.FullName ?? "", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen);
+
+        AddDecompilationTooltip(type);
+    }
+
+    public static void AddDecompilationTooltip(Type type)
+    {
+        AddTooltip("Click to open C# decompilation\n(Requires ilspycmd to be installed globally)");
+        if (!ImGui.IsItemClicked())
+            return;
+        
+        var existing = ImGuiManager.Handlers.FirstOrDefault(h =>
+            h is DecompilationWindow dec && dec.Type == type);
+        if (existing is null)
+            Engine.Scene.OnEndOfFrame += () => ImGuiManager.Handlers.Add(new DecompilationWindow(type));
     }
 }
 

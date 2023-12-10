@@ -4,7 +4,7 @@
         <TargetFramework>net7.0</TargetFramework>
         <AssemblyName>MappingUtils</AssemblyName>
         <RootNamespace>Celeste.Mod.MappingUtils</RootNamespace>
-        <LangVersion>latest</LangVersion>
+        <LangVersion>12.0</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
         <Optimize>True</Optimize>

@@ -6,15 +6,17 @@ namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
 
 public class MainMappingUtils : ImGuiHandler
 {
-    public static List<Tab> Tabs { get; private set; } = new()
-    {
+    public static List<Tab> Tabs { get; private set; } =
+    [
         new MetadataTab(),
         new FlagTab(),
         new CheatTab(),
         new EntityTab(),
         new StylegroundViewTab(),
         new ProfilingTab(),
-    };
+        // new ParticleTab(), - exporting unimplemented, overrides Dust particle.
+        // new LogTab() - not quite there yet, doesn't live reload :/
+    ];
 
     public static bool Enabled { get; set; }
 

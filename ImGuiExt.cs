@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using Celeste.Mod.MappingUtils.ImGuiHandlers;
+using Microsoft.Xna.Framework.Graphics;
 using MonoMod.Utils;
 
 namespace Celeste.Mod.MappingUtils;
@@ -89,6 +90,11 @@ public static class ImGuiExt
         return edited;
     }
 
+    public static bool EnumCombo<T>(string name, ref T value, ComboCache<T> cache) where T : struct, Enum
+    {
+        return Combo(name, ref value, Enum.GetValues<T>(), t => t.ToString(), cache);
+    }
+    
     public static bool Combo<T>(string name, ref T value, IList<T> values, Func<T, string> toString, ComboCache<T> cache, string? tooltip = null, ImGuiComboFlags flags = ImGuiComboFlags.None) where T : notnull
     {
         var valueName = toString(value);
@@ -155,6 +161,62 @@ public static class ImGuiExt
             h is DecompilationWindow dec && dec.Type == type);
         if (existing is null)
             Engine.Scene.OnEndOfFrame += () => ImGuiManager.Handlers.Add(new DecompilationWindow(type));
+    }
+    
+    private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new(StringComparer.Ordinal);
+    
+
+    private static ImGuiRenderer Renderer => new DynamicData(new DynamicData(ImGuiHelperModule.Instance)
+        .Get<ImGuiManager>("imGuiManager")!)
+        .Get<ImGuiRenderer>("renderer")!;
+    
+    public static void XnaWidget(string id, int w, int h, Action renderFunc, Matrix matrix, bool rerender = true) {
+        if (w <= 0 || h <= 0)
+            return;
+
+        var renderer = Renderer;
+        
+        bool isNew = false;
+        if (!Targets.TryGetValue(id, out var t) || t.Target.Width != w || t.Target.Height != h) {
+            if (t.Target != null) {
+                renderer.UnbindTexture(t.ID);
+                t.Target.Dispose();
+            }
+
+            t.Target = new(Engine.Instance.GraphicsDevice, w, h, false, SurfaceFormat.Color, DepthFormat.None, 0, RenderTargetUsage.PreserveContents);
+            t.ID = renderer.BindTexture(t.Target);
+            Targets[id] = t;
+            isNew = true;
+        }
+
+        ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
+        ImGui.Image(t.ID, new(w, h));
+        ImGui.PopStyleVar(1);
+        
+        if ((rerender || isNew) && ImGui.IsItemVisible())
+        {
+            Engine.Scene.OnEndOfFrame += () =>
+            {
+                var g = Engine.Instance.GraphicsDevice;
+                g.SetRenderTarget(t.Target);
+                g.Clear(Color.Transparent);
+
+                Draw.SpriteBatch.Begin(SpriteSortMode.Deferred, BlendState.AlphaBlend, SamplerState.PointWrap, DepthStencilState.None, RasterizerState.CullNone, null, matrix);
+                
+                renderFunc();
+                
+                Draw.SpriteBatch.End();
+                g.SetRenderTarget(null);
+            };
+        }
+    }
+
+    public static void DisposeXnaWidget(string id) {
+        if (Targets.TryGetValue(id, out var t)) {
+            Renderer.UnbindTexture(t.ID);
+            t.Target?.Dispose();
+            Targets.Remove(id);
+        }
     }
 }
 

@@ -42,7 +42,6 @@ public static class ILDiff
         MappingUtilsModule.WriteToIngameLog = true;
         var time = DateTime.Now;
         Directory.CreateDirectory(directory);
-        var timestampFilename = $"{time.Ticks}.txt";
 
         var db = new DBFile
         {
@@ -60,48 +59,54 @@ public static class ILDiff
         var detourStates = (IDictionary)DetourManager_detourStates.Value.GetValue(null)!;
         foreach (MethodBase key in detourStates.Keys)
         {
-            if (!DetourManager.GetDetourInfo(key).ILHooks.Any())
-                continue;
-
-            try
+            var methodName = GetMethodNameForDB(key);
+            var methodNameAsDirName = NameAsValidFilename(methodName);
+            var dir = Path.Combine(directory, methodNameAsDirName);
+            var detourInfo = DetourManager.GetDetourInfo(key);
+            HashSet<string> fileList = [];
+            
+            if (detourInfo.ILHooks.Any())
             {
-                //var methodName = $"{key.DeclaringType?.FullName ?? $"unk-{Guid.NewGuid()}"}.{key.Name}";
-                var methodName = GetMethodNameForDB(key);
-                var methodNameAsDirName = NameAsValidFilename(methodName);
-                var dir = Path.Combine(directory, methodNameAsDirName);
-                Directory.CreateDirectory(dir);
-
-                MappingUtilsModule.Log(LogLevel.Info, DiffAllTag, $"Dumping {key.GetID()} to {dir}");
-
-                using var ilFileStream = File.Create(Path.Combine(dir, timestampFilename));
-                var diff = new MethodDiff(key);
-                diff.PrintToStream(ilFileStream);
-
-                var fileListFile = new FileInfo(Path.Combine(dir, "files.json"));
-                HashSet<string> fileList = null!;
-                if (fileListFile.Exists)
+                try
                 {
-                    using var fileListReadStream = fileListFile.Open(FileMode.OpenOrCreate, FileAccess.Read);
-                    fileList = JsonSerializer.Deserialize<HashSet<string>>(fileListReadStream) ?? new();
-                } else
+                    Directory.CreateDirectory(dir);
+                    MappingUtilsModule.Log(LogLevel.Info, DiffAllTag, $"Dumping {key.GetID()} to {dir}");
+
+                    using var ilFileStream = File.Create(Path.Combine(dir, "ildiff.txt"));
+                    var diff = new MethodDiff(key);
+                    diff.PrintToStream(ilFileStream);
+                    
+                    fileList.Add("ildiff.txt");
+                    
+                } catch (Exception ex)
                 {
-                    fileList = new();
+                    MappingUtilsModule.Log(LogLevel.Warn, DiffAllTag, $"Failed to dump: {key.GetID()}: {ex}");
                 }
-
-                fileList.Add(timestampFilename);
-                using var fileListWriteStream = fileListFile.Open(FileMode.Create, FileAccess.Write);
-                JsonSerializer.Serialize(fileListWriteStream, fileList);
-
-                db.Methods.Add(new(methodName, methodNameAsDirName, diff.AppliedHookNames));
-
-            } catch (Exception ex)
-            {
-                MappingUtilsModule.Log(LogLevel.Warn, DiffAllTag, $"Failed to dump: {key.GetID()}: {ex}");
             }
 
-            using var dbStream = File.Open(Path.Combine(directory, "info.json"), FileMode.Create, FileAccess.Write);
-            JsonSerializer.Serialize(dbStream, db);
+            if (detourInfo.Detours.Any() || detourInfo.ILHooks.Any())
+            {
+                Directory.CreateDirectory(dir);
+                fileList.Add("allhooks.txt");
+
+                var allHooks = detourInfo.Detours.Select(d => $"On: {d.Entry.GetID()}")
+                    .Concat(detourInfo.ILHooks.Select(d => $"IL: {d.ManipulatorMethod.GetID()}")).ToList();
+                
+                db.Methods.Add(new(methodName, methodNameAsDirName, allHooks));
+                File.WriteAllLines(Path.Combine(dir, "allhooks.txt"), allHooks);
+            }
+
+            if (fileList.Count > 0)
+            {
+                Directory.CreateDirectory(dir);
+                var fileListFile = new FileInfo(Path.Combine(dir, "files.json"));
+                using var fileListWriteStream = fileListFile.Open(FileMode.Create, FileAccess.Write);
+                JsonSerializer.Serialize(fileListWriteStream, fileList);
+            }
         }
+        
+        using var dbStream = File.Open(Path.Combine(directory, "info.json"), FileMode.Create, FileAccess.Write);
+        JsonSerializer.Serialize(dbStream, db);
         
         MappingUtilsModule.WriteToIngameLog = false;
     }

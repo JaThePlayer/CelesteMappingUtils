@@ -256,6 +256,11 @@ internal class ProfilingTab : Tab
         (Type t) => t.Name,
         (string name) => name
     );
+    
+    private static string GetFullName(OneOf<Type, string> typeOrString) => typeOrString.Match(
+        (Type t) => t.FullName ?? t.Name,
+        (string name) => name
+    );
 
     private static readonly Dictionary<string, string> ColumnTooltips = new()
     {
@@ -286,7 +291,7 @@ internal class ProfilingTab : Tab
 
         DisplayedInfo ??= CurrentInfo;
 
-        var allInfos = DisplayedInfo.GetInfos().MergeBy(GetName, (a, b) => a.CreateMerged(b)).ToList();
+        var allInfos = DisplayedInfo.GetInfos().MergeBy(GetFullName, (a, b) => a.CreateMerged(b)).ToList();
 
         var orderedInfo = allInfos.OrderByDescending(i => i.Item2.TotalTime);
         var totalTime = allInfos.Aggregate(TimeSpan.Zero, (t, kv) => t + kv.Item2.TotalTime);
@@ -312,7 +317,7 @@ internal class ProfilingTab : Tab
         ImGui.TableSetupColumn("Total");
         ImGui.TableSetupColumn("Update");
         ImGui.TableSetupColumn("Render");
-        ImGui.TableSetupColumn("BeforeRender"); //, 
+        ImGui.TableSetupColumn("BeforeRender");
 
         //ImGui.TableHeadersRow();
         ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
@@ -381,24 +386,20 @@ internal class ProfilingTab : Tab
 
             static void RenderPercent(TimeSpan time, TimeSpan totalTime, float colorMult)
             {
-                const string format = "0.0%\\%";
-
                 var p = time / totalTime;
 
                 var color = Color.Lerp(Color.White, Color.Red, (float)p * colorMult);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), p.ToString(format, CultureInfo.InvariantCulture));
+                ImGui.TextColored(color.ToNumVec4(), p.ToString("0.0%\\%", CultureInfo.InvariantCulture));
             }
 
             static void RenderTime(TimeSpan time, TimeSpan totalTime)
             {
-                const string format = "0.###";
-
                 var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), (time.TotalMilliseconds / ClearFrameCount).ToString(format));
+                ImGui.TextColored(color.ToNumVec4(), (time.TotalMilliseconds / ClearFrameCount).ToString("0.###"));
             }
         }
 

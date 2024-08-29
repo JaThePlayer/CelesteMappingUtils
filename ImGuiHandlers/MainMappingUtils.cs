@@ -10,6 +10,7 @@ public class MainMappingUtils : ImGuiHandler
     [
         new MetadataTab(),
         new FlagTab(),
+        new CountersTab(),
         new CheatTab(),
         new EntityTab(),
         new StylegroundViewTab(),

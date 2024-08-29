@@ -8,14 +8,25 @@ internal class FlagTab : Tab
     {
         var flags = level.Session.Flags;
 
+        if (!ImGui.BeginTable("Flags", 1, ImGuiExt.TableFlags | ImGuiTableFlags.NoSavedSettings))
+        {
+            return;
+        }
+
+        ImGui.TableSetupColumn("Flag", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
+        ImGui.TableHeadersRow();
+        
         foreach (var f in flags)
         {
+            ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ItemWidth);
             if (ImGui.Selectable(f))
             {
                 level.OnEndOfFrame += () => level.Session.SetFlag(f, false);
             }
         }
+        
+        ImGui.EndTable();
 
         ImGui.SetNextItemWidth(ItemWidth);
         ImGui.InputText("New Flag", ref NewFlag, 512);

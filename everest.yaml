@@ -1,5 +1,5 @@
 - Name: MappingUtils
-  Version: 1.6.0
+  Version: 1.7.0
   DLL: bin/MappingUtils.dll
   Dependencies:
     - Name: EverestCore

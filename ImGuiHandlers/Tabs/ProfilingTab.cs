@@ -16,6 +16,8 @@ internal class ProfilingTab : Tab
 {
     public override string Name => "Profiling";
 
+    public override bool CanBeVisible() => true;
+
     public static int ClearFrameCount = 5;
     public static int FramesUntilClear = ClearFrameCount;
 
@@ -274,7 +276,7 @@ internal class ProfilingTab : Tab
         ["BeforeRender"] = "The time spent by this entity type in the BeforeRender method.",
     };
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
         LoadHooksIfNeeded();
 
@@ -352,7 +354,7 @@ internal class ProfilingTab : Tab
             ImGui.Text(GetName(name));
             if (declaringType is { })
             {
-                ImGuiExt.AddDecompilationTooltip(declaringType);
+                ImGuiExt.AddDecompilationTooltip(declaringType, null);
             }
             if (ImGui.IsItemHovered())
             {

@@ -6,8 +6,11 @@ internal class CountersTab : Tab
     
     public override string Name => "Counters";
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
+        if (level is null)
+            return;
+        
         var textBaseWidth = ImGui.CalcTextSize("m").X;
         
         var counters = level.Session.Counters;

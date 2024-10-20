@@ -16,14 +16,17 @@
         <CelesteType Condition="'$(CelesteType)' == ''">FNA</CelesteType>
     </PropertyGroup>
 
-    <!--Disable "Copy Local" for all references-->
+    <!--Disable "Copy Local" for all references
     <ItemDefinitionGroup>
         <PackageReference PrivateAssets="all" ExcludeAssets="runtime" />
         <Reference Private="false" />
     </ItemDefinitionGroup>
-
+-->
     <ItemGroup>
         <PackageReference Include="CelesteAnalyzer" Version="1.0.3.1" />
+        <PackageReference Include="ICSharpCode.Decompiler" Version="9.0.0.7660-preview2">
+            <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive; runtime</IncludeAssets>
+        </PackageReference>
 
         <PackageReference Include="Mono.Cecil" Version="0.11.5" />
 
@@ -35,12 +38,12 @@
 
         <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.0">
             <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+            <IncludeAssets>build</IncludeAssets>
         </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="$(CelestePrefix)\Celeste.dll">
+        <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true">
             <Private>false</Private>
         </Reference>
         <Reference Include="$(CelestePrefix)\MonoMod.exe">
@@ -56,10 +59,13 @@
             <Private>false</Private>
         </Reference>
         <Reference Include="ImGuiHelper">
-          <HintPath>lib\ImGuiHelper.dll</HintPath>
+            <HintPath>lib\ImGuiHelper.dll</HintPath>
+            <Private>false</Private>
         </Reference>
-
-        <Publicize Include="Celeste" />
+        <Reference Include="ImGuiColorTextEditNet">
+            <HintPath>lib\ImGuiColorTextEditNet.dll</HintPath>
+            <Private>false</Private>
+        </Reference>
     </ItemGroup>
 
     <Choose>
@@ -74,6 +80,8 @@
 
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
+        <Copy SourceFiles="lib\ImGuiColorTextEditNet.dll" DestinationFolder="bin" />
+        <Copy SourceFiles="lib\ImGuiColorTextEditNet.LICENSE.txt" DestinationFolder="bin" />
         <!--<Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin" />-->
     </Target>
     

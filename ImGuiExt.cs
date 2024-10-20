@@ -137,30 +137,33 @@ public static class ImGuiExt
     public static void DecompilableMethod(MethodBase method)
     {
         ImGui.TreeNodeEx(method.GetID(simple: true) ?? "", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen);
-
-        if (method.DeclaringType is not { } declaringType)
-            return;
-        
-        AddDecompilationTooltip(declaringType);
+        AddDecompilationTooltip(method);
     }
     
     public static void DecompilableType(Type type)
     {
         ImGui.TreeNodeEx(type.FullName ?? "", ImGuiTreeNodeFlags.Bullet | ImGuiTreeNodeFlags.NoTreePushOnOpen);
-
-        AddDecompilationTooltip(type);
+        AddDecompilationTooltip(type, null);
     }
 
-    public static void AddDecompilationTooltip(Type type)
+    public static void AddDecompilationTooltip(MethodBase method)
     {
-        AddTooltip("Click to open C# decompilation\n(Requires ilspycmd to be installed globally)");
+        if (method.DeclaringType is not { } decl)
+            return;
+        
+        AddDecompilationTooltip(decl, method);
+    }
+    
+    public static void AddDecompilationTooltip(Type type, MethodBase? method)
+    {
+        AddTooltip("Click to open C# decompilation");
         if (!ImGui.IsItemClicked())
             return;
         
         var existing = ImGuiManager.Handlers.FirstOrDefault(h =>
             h is DecompilationWindow dec && dec.Type == type);
         if (existing is null)
-            Engine.Scene.OnEndOfFrame += () => ImGuiManager.Handlers.Add(new DecompilationWindow(type));
+            Engine.Scene.OnEndOfFrame += () => ImGuiManager.Handlers.Add(new DecompilationWindow(type, method));
     }
     
     private static Dictionary<string, (RenderTarget2D Target, nint ID)> Targets = new(StringComparer.Ordinal);

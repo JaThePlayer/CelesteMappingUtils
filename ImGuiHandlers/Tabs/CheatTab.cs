@@ -6,8 +6,11 @@ internal class CheatTab : Tab
 {
     public override string Name => "Cheats";
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
+        if (level is null)
+            return;
+        
         var fly = Fly.Enabled;
         if (ImGui.Checkbox("Fly+NoClip", ref fly).WithTooltip("Enables you to freely fly anywhere and noclip through solids"))
         {

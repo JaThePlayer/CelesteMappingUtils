@@ -8,8 +8,11 @@ internal class MetadataTab : Tab
 {
     public override string Name => "Metadata";
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
+        if (level is null)
+            return;
+        
         ImGui.SetNextItemWidth(ItemWidth);
         ImGui.DragFloat("Bloom Base", ref level.Bloom.Base, 0.01f, 0f);
         ImGui.SetNextItemWidth(ItemWidth);
@@ -85,8 +88,38 @@ internal class MetadataTab : Tab
                 }
             }
         }
+        
+        
+        if (FrostHelperAPI.EntityNameToType is { } entityNameToType && FrostHelperAPI.SetCustomSpinnerColor is { } setTint && FrostHelperAPI.SetCustomSpinnerBorderColor is { } setBorderColor)
+        {
+            ImGui.Separator();
+            
+            if (entityNameToType("FrostHelper/IceSpinner") is { } customSpinnerType && level.Tracker.Entities.TryGetValue(customSpinnerType, out var spinners) && spinners.Count > 0)
+            {
+                ImGui.Text("Frost Helper Custom Spinners");
+
+                if (ImGuiExt.ColorEdit("Tint", ref CustomSpinnerTint, Helpers.ColorFormat.RGBA, "Change the color of all Frost Helper custom spinners"))
+                {
+                    foreach (var item in spinners)
+                    {
+                        setTint(item, CustomSpinnerTint);
+                    }
+                }
+
+                if (ImGuiExt.ColorEdit("Border Color", ref CustomSpinnerBorderColor, Helpers.ColorFormat.RGBA, "Change the border color of all Frost Helper custom spinners"))
+                {
+                    foreach (var item in spinners)
+                    {
+                        setBorderColor(item, CustomSpinnerBorderColor);
+                    }
+                }
+            }
+        }
     }
 
+    
+    static Color CustomSpinnerTint = Color.White;
+    static Color CustomSpinnerBorderColor = Color.Black;
     static List<string>? ColorGrades;
     static ComboCache<string> ColorGradeCache = new();
 }

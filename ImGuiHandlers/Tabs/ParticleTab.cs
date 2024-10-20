@@ -8,6 +8,8 @@ public class ParticleTab : Tab
 {
     public override string Name => "Particles";
 
+    public override bool CanBeVisible() => true;
+
     private bool _particleSet;
     
     public ParticleType Particle;
@@ -29,7 +31,7 @@ public class ParticleTab : Tab
 
      */
     
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
         if (!_particleSet)
         {

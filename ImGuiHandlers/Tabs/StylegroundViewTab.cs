@@ -13,8 +13,11 @@ public class StylegroundViewTab : Tab
     public static List<string> BlendModes = null!;
     private static ComboCache<string> BlendModeCombo = new();
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
+        if (level is null)
+            return;
+        
         if (BlendModes is null)
         {
             BlendModes = new() { "additive", "alphablend" };
@@ -58,7 +61,8 @@ public class StylegroundViewTab : Tab
                 if (blendStateName is { })
                 {
                     ImGui.SetNextItemWidth(ItemWidth);
-                    if (ImGuiExt.Combo("Blend Mode", ref blendStateName, BlendModes, x => x, BlendModeCombo))
+                    if (ImGuiExt.Combo("Blend Mode", ref blendStateName, BlendModes, x => x, BlendModeCombo)
+                        && FrostHelperAPI.SetBackdropBlendState is {})
                     {
                         FrostHelperAPI.SetBackdropBlendState(s, blendStateName switch
                         {

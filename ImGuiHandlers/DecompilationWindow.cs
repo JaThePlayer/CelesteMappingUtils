@@ -1,9 +1,13 @@
-﻿using System.Threading.Tasks;
+﻿using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Celeste.Mod.MappingUtils.ModIntegration;
+using FosterTest;
+using ImGuiColorTextEditNet;
 
 namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
 
-public class DecompilationWindow(Type type) : ImGuiHandler
+public class DecompilationWindow(Type type, MethodBase? method = null) : ImGuiHandler
 {
     public Type Type => type;
     
@@ -14,14 +18,75 @@ public class DecompilationWindow(Type type) : ImGuiHandler
     private bool _decompilationFinished;
 
     private string? _source;
+
+    private TextEditor? _editor;
+    private string? _lastEditorText;
     
     public override void Render()
     {
         base.Render();
+
+        string text;
+
+        lock (_sourceLock)
+        {
+            text = (_decompilationSucceded, _decompilationFinished, _source) switch
+            {
+                (true, true, var msg) => msg ?? "???",
+                (false, true, var msg) => $"""
+                                           Decompilation failed.
+
+                                           Error message: {msg}
+                                           """,
+                (_, false, _) => "Decompiling...",
+            };
+            
+            _editor ??= new TextEditor
+            {
+                AllText = text,
+                SyntaxHighlighter = new CSharpStyleHighlighter(),
+                Renderer =
+                {
+                    IsShowingWhitespace = false,
+                },
+                Options =
+                {
+                    IsReadOnly = true,
+                }
+            };
+            
+            _lastEditorText ??= text;
+            if (_lastEditorText != text)
+            {
+                _editor.AllText = text;
+                
+                var maxX = 0f;
+                var maxY = 0f;
+
+                foreach (var l in _editor.TextLines)
+                {
+                    var lineSize = ImGui.CalcTextSize(l);
+                    maxX = float.Max(lineSize.X, maxX);
+                    maxY += lineSize.Y;
+                }
+                
+                var size = new NumVector2(maxX, maxY);
+                size.Y += ImGui.GetFrameHeightWithSpacing() * 3;
+
+                size.X = float.Min(size.X, 700f);
+                size.Y = float.Min(size.Y, 500f);
+
+                ImGui.SetNextWindowSize(size, ImGuiCond.Always);
+            } else
+            {
+                ImGui.SetNextWindowSize(new(
+                    ImGui.CalcTextSize("  Decompiling...  ").X, 
+                    ImGui.GetFrameHeightWithSpacing() * 2f + ImGui.GetTextLineHeightWithSpacing()), ImGuiCond.Once);
+            }
+        }
         
         bool open = true;
-        ImGui.SetNextWindowSize(new(500f, 800f), ImGuiCond.Once);
-        if (!ImGui.Begin($"Decompilation - {type}", ref open))
+        if (!ImGui.Begin($"Decompilation - {type}##{_decompilationFinished}{GetHashCode()}", ref open, ImGuiWindowFlags.NoSavedSettings))
         {
             if (!open)
             {
@@ -36,7 +101,7 @@ public class DecompilationWindow(Type type) : ImGuiHandler
             _decompilationStarted = true;
             Task.Run(async () =>
             {
-                var (success, msg) = await IlSpyCmd.DecompileAsync(type);
+                var (success, msg) = await IlSpyCmd.DecompileAsync(type, method);
 
                 lock (_sourceLock)
                 {
@@ -49,24 +114,9 @@ public class DecompilationWindow(Type type) : ImGuiHandler
 
         lock (_sourceLock)
         {
-            var text = (_decompilationSucceded, _decompilationFinished, _source) switch
-            {
-                (true, true, var msg) => msg ?? "???",
-                (false, true, var msg) => $"""
-                                    Decompilation failed.
-                                    Do you have ilspycmd installed globally?
-                                    If not, run 'dotnet tool install ilspycmd -g' in the command line to install it.
-                                    
-                                    Error message: {msg}
-                                    """,
-                (_, false, _) => "Decompiling...",
-            };
-
             ImGui.PushStyleColor(ImGuiCol.FrameBg, 0x00000000);
             
-            var size = ImGui.GetWindowSize();
-            size.Y -= ImGui.GetFrameHeightWithSpacing() * 2;
-            ImGui.InputTextMultiline("", ref text, (uint)text.Length, size, ImGuiInputTextFlags.ReadOnly);
+            _editor.Render("");
             
             ImGui.PopStyleColor(1);
         }

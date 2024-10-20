@@ -4,8 +4,11 @@ internal class FlagTab : Tab
 {
     public override string Name => "Flags";
 
-    public override void Render(Level level)
+    public override void Render(Level? level)
     {
+        if (level is null)
+            return;
+        
         var flags = level.Session.Flags;
 
         if (!ImGui.BeginTable("Flags", 1, ImGuiExt.TableFlags | ImGuiTableFlags.NoSavedSettings))

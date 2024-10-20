@@ -14,8 +14,10 @@ public class LogTab : Tab
     private string LogFileFullPath => Path.GetFullPath(Everest.PathLog ?? "");
     
     public override string Name => "Log";
-    
-    public override void Render(Level level)
+
+    public override bool CanBeVisible() => true;
+
+    public override void Render(Level? level)
     {
         if (Everest.PathLog is not { })
         {

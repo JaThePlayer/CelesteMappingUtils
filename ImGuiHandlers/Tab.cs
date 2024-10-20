@@ -8,9 +8,13 @@ public abstract class Tab
 
     public abstract string Name { get; }
 
-    public abstract void Render(Level level);
+    public abstract void Render(Level? level);
 
     public virtual void OnOpen() { }
 
     public virtual void OnClose() { }
+
+    public virtual bool CanBeVisible() => Engine.Scene is Level;
+
+    internal string? CachedNamespacedImguiName;
 }

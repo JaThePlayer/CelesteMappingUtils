@@ -55,9 +55,7 @@ public static class ILDiff
                 db.Mods.Add(new(module.Metadata.Name, module.Metadata.VersionString));
         }
 
-        //ConcurrentDictionary<MethodBase, ManagedDetourState> detourStates
-        var detourStates = (IDictionary)DetourManager_detourStates.Value.GetValue(null)!;
-        foreach (MethodBase key in detourStates.Keys)
+        foreach (MethodBase key in HookDiscovery.GetHookedMethods())
         {
             var methodName = GetMethodNameForDB(key);
             var methodNameAsDirName = NameAsValidFilename(methodName);
@@ -181,7 +179,6 @@ public static class ILDiff
             (char)31, ':', '*', '?', '\\', '/',
             '+' // breaks URL's
     };
-    private static Lazy<FieldInfo> DetourManager_detourStates = new(() => typeof(DetourManager).GetField("detourStates", BindingFlags.Static | BindingFlags.NonPublic)!);
 
     public class DBFile
     {

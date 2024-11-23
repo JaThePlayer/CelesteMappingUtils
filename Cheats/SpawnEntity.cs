@@ -22,7 +22,7 @@ internal static class SpawnEntity
         "pandorasBox/propellerBox",
         "VortexHelper/BowlPuffer",
         "batteries/battery"
-    }.Where(sid => FrostHelperAPI.EntityNameToTypeOrNull(sid) is { }).ToList() : new());
+    }.Where(sid => FrostHelperAPI.EntityNameToTypeOrNull?.Invoke(sid) is { }).ToList() : new());
 
     public static Dictionary<string, Dictionary<string, object>> SIDToEntityDataValues = new()
     {
@@ -56,7 +56,7 @@ internal static class SpawnEntity
         if (player == null)
             return;
 
-        var type = FrostHelperAPI.EntityNameToTypeOrNull(sid);
+        var type = FrostHelperAPI.EntityNameToTypeOrNull?.Invoke(sid);
         if (type is null)
             return;
 
@@ -67,9 +67,9 @@ internal static class SpawnEntity
             Values = SIDToEntityDataValues.GetValueOrDefault(sid) ?? new(),
         };
 
-        if ((TryCreateInstance(type, new object[] { data, new Vector2(0, 0) }) ??
-            TryCreateInstance(type, new object[] { data.Position }) ??
-            TryCreateInstance(type, new object[] { data, new Vector2(0, 0), new EntityID("__MappingUtils_SpawnEntity", SummonedID++) }))
+        if ((TryCreateInstance(type, [data, new Vector2(0, 0)]) ??
+            TryCreateInstance(type, [data.Position]) ??
+            TryCreateInstance(type, [data, new Vector2(0, 0), new EntityID("__MappingUtils_SpawnEntity", SummonedID++)]))
             is { } entity)
         {
             level.Add(entity);

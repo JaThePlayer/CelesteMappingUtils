@@ -82,6 +82,7 @@
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
         <Copy SourceFiles="lib\ImGuiColorTextEditNet.dll" DestinationFolder="bin" />
         <Copy SourceFiles="lib\ImGuiColorTextEditNet.LICENSE.txt" DestinationFolder="bin" />
+        <Copy SourceFiles="lib\ICSharpCode.Decompiler.dll" DestinationFolder="bin" />
         <!--<Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin" />-->
     </Target>
     

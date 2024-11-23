@@ -80,6 +80,10 @@ internal class ProfilingTab : Tab
         IL.Celeste.BackdropRenderer.BeforeRender += BackdropRendererBeforeRenderManipulator;
         IL.Celeste.BackdropRenderer.Update += BackdropRendererUpdateManipulator;
         IL.Celeste.Level.BeforeRender += Level_BeforeRender1;
+        
+        ArbitraryHooks.Add(new ILHook(
+            typeof(Player).GetMethod("orig_Update", BindingFlags.Instance | BindingFlags.Public)!,
+            PlayerOrigUpdate_SplitTriggerOnStay));
 
         MappingUtilsModule.OnUnload += UnloadHooksIfNeeded;
 
@@ -96,6 +100,45 @@ internal class ProfilingTab : Tab
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Profile Trigger.OnStay and make sure that time spent in OnStay is not added to player.Update.
+    /// </summary>
+    private static void PlayerOrigUpdate_SplitTriggerOnStay(ILContext il)
+    {
+        var cursor = new ILCursor(il);
+
+        if (!cursor.TryGotoNext(MoveType.Before, instr => instr.MatchCallOrCallvirt<Trigger>(nameof(Trigger.OnStay))))
+        {
+            Logger.Log(LogLevel.Warn, "MappingUtils.Profiling", $"Failed to apply {il.Method.GetID()} hook!");
+            return;
+        }
+
+        var infoLoc = new VariableDefinition(il.Import(typeof(Info)));
+        cursor.Body.Variables.Add(infoLoc);
+
+        // First, this is taking place inside of Player.Update, and we want to count OnStay seperately.
+        // We'll stop profiling Player.Update:
+        cursor.Emit(OpCodes.Ldarg_0);
+        cursor.EmitDelegate(EndUpdateNoCountIncrease);
+
+        // Next, profile Trigger.OnStay
+        cursor.Emit(OpCodes.Ldloc_S, (byte)10); // TODO: this seems bad but it should be fine since there won't be any updates anymore???
+        cursor.EmitDelegate(BeginFor);
+        cursor.Emit(OpCodes.Stloc, infoLoc);
+
+        cursor.GotoNext(MoveType.After, instr => instr.MatchCallOrCallvirt<Trigger>(nameof(Trigger.OnStay)));
+
+        // stop profiling the trigger
+        cursor.Emit(OpCodes.Ldloc, infoLoc);
+        cursor.EmitDelegate(EndOnStay);
+
+        // begin profiling the player again - the hook on EntityList.Update will handle ending the profiling
+        // (we can safely pop the Info object, because its the same object that the other hook will use)
+        cursor.Emit(OpCodes.Ldarg_0);
+        cursor.EmitDelegate(BeginFor);
+        cursor.EmitPop();
     }
 
     private static void InjectProfiling(ILContext il, string name)
@@ -236,8 +279,15 @@ internal class ProfilingTab : Tab
     private static void EndRender(Info info) => info.Stop(info.Render);
 
     private static void EndUpdate(Info info) => info.Stop(info.Update);
+    private static void EndUpdateNoCountIncrease(Entity entity)
+    {
+        var info = CurrentInfo.GetFor(entity);
+        info.StopNoCountIncrease(info.Update);
+    }
 
     private static void EndBeforeRender(Info info) => info.Stop(info.BeforeRender);
+    
+    private static void EndOnStay(Info info) => info.Stop(info.OnStay);
 
     private static void EndArbitrary(Info info) => info.Stop(info.Update);
     #endregion
@@ -306,8 +356,8 @@ internal class ProfilingTab : Tab
             Never compare the FPS Score between different computers, as its hardware-dependent.
             """);
 
-        const int columnCount = 8;
-        if (!ImGui.BeginTable("Styles", columnCount, flags))
+        const int columnCount = 9;
+        if (!ImGui.BeginTable("Perf", columnCount, flags))
         {
             return;
         }
@@ -320,6 +370,7 @@ internal class ProfilingTab : Tab
         ImGui.TableSetupColumn("Update");
         ImGui.TableSetupColumn("Render");
         ImGui.TableSetupColumn("BeforeRender");
+        ImGui.TableSetupColumn("OnStay");
 
         //ImGui.TableHeadersRow();
         ImGui.TableNextRow(ImGuiTableRowFlags.Headers);
@@ -385,7 +436,8 @@ internal class ProfilingTab : Tab
             RenderTime(info.Update.Time, frameTime * ClearFrameCount);
             RenderTime(info.Render.Time, frameTime * ClearFrameCount);
             RenderTime(info.BeforeRender.Time, frameTime * ClearFrameCount);
-
+            RenderTime(info.OnStay.Time, frameTime * ClearFrameCount);
+            
             static void RenderPercent(TimeSpan time, TimeSpan totalTime, float colorMult)
             {
                 var p = time / totalTime;
@@ -398,10 +450,14 @@ internal class ProfilingTab : Tab
 
             static void RenderTime(TimeSpan time, TimeSpan totalTime)
             {
-                var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
-
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), (time.TotalMilliseconds / ClearFrameCount).ToString("0.###"));
+                
+                double timeMs = (time.TotalMilliseconds / ClearFrameCount);
+                if (timeMs <= 0)
+                    return;
+                
+                var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
+                ImGui.TextColored(color.ToNumVec4(), timeMs.ToString("0.###"));
             }
         }
 
@@ -482,9 +538,10 @@ internal class ProfilingTab : Tab
         public Section Update = new();
         public Section Render = new();
         public Section BeforeRender = new();
+        public Section OnStay = new();
 
-        public TimeSpan TotalTime => Update.Time + Render.Time + BeforeRender.Time;
-        public int Count => Math.Max(Update.Count, Math.Max(Render.Count, BeforeRender.Count));
+        public TimeSpan TotalTime => Update.Time + Render.Time + BeforeRender.Time + OnStay.Time;
+        public int Count => Math.Max(Update.Count, Math.Max(Render.Count, Math.Max(BeforeRender.Count, OnStay.Count)));
 
         private long StartTimestamp;
 
@@ -494,10 +551,12 @@ internal class ProfilingTab : Tab
             merged.Update.Time = Update.Time + other.Update.Time;
             merged.Render.Time = Render.Time + other.Render.Time;
             merged.BeforeRender.Time = BeforeRender.Time + other.BeforeRender.Time;
-
+            merged.OnStay.Time = OnStay.Time + other.OnStay.Time;
+            
             merged.Update.Count = Update.Count + other.Update.Count;
             merged.Render.Count = Render.Count + other.Render.Count;
             merged.BeforeRender.Count = BeforeRender.Count + other.BeforeRender.Count;
+            merged.OnStay.Count = OnStay.Count + other.OnStay.Count;
 
             return merged;
         }
@@ -512,6 +571,16 @@ internal class ProfilingTab : Tab
             var elapsed = Stopwatch.GetElapsedTime(StartTimestamp);
             into.Time += elapsed;
             into.Count++;
+        }
+        
+        /// <summary>
+        /// Same as Stop, but doesn't decreate 'Count', used when the profiling has to stopped midway through a frame.
+        /// </summary>
+        /// <param name="into"></param>
+        public void StopNoCountIncrease(Section into)
+        {
+            var elapsed = Stopwatch.GetElapsedTime(StartTimestamp);
+            into.Time += elapsed;
         }
 
         public class Section

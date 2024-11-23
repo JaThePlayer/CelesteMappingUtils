@@ -1,6 +1,6 @@
 ﻿using Microsoft.Xna.Framework.Graphics;
 using MonoMod.ModInterop;
-using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Celeste.Mod.MappingUtils.ModIntegration;
 
@@ -40,4 +40,8 @@ public class FrostHelperAPI
 
     public static Action<Backdrop, BlendState>? SetBackdropBlendState;
     public static Func<Backdrop, BlendState?>? GetBackdropBlendState;
+
+    public delegate bool TryCreateSessionExpressionDelegate(string str, [NotNullWhen(true)] out object? expression);
+
+    public static TryCreateSessionExpressionDelegate? TryCreateSessionExpression;
 }

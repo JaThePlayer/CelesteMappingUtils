@@ -45,8 +45,7 @@ internal class MetadataTab : Tab
         }
 
         #region Camera
-        ImGui.Separator();
-        ImGui.Text("Camera");
+        ImGui.SeparatorText("Camera");
 
         var cam = level.Camera;
         // match camera offset triggers
@@ -68,8 +67,7 @@ internal class MetadataTab : Tab
 
         if (ExtVariantsAPI.Available)
         {
-            ImGui.Separator();
-            ImGui.Text("Extended Variants");
+            ImGui.SeparatorText("Extended Variants");
 
             DrawFloatVariant(ExtVariantsAPI.Variant.BackgroundBrightness, "Background Brightness");
             DrawFloatVariant(ExtVariantsAPI.Variant.BackgroundBlurLevel, "Background Blur");
@@ -92,11 +90,9 @@ internal class MetadataTab : Tab
         
         if (FrostHelperAPI.EntityNameToType is { } entityNameToType && FrostHelperAPI.SetCustomSpinnerColor is { } setTint && FrostHelperAPI.SetCustomSpinnerBorderColor is { } setBorderColor)
         {
-            ImGui.Separator();
-            
             if (entityNameToType("FrostHelper/IceSpinner") is { } customSpinnerType && level.Tracker.Entities.TryGetValue(customSpinnerType, out var spinners) && spinners.Count > 0)
             {
-                ImGui.Text("Frost Helper Custom Spinners");
+                ImGui.SeparatorText("Frost Helper Custom Spinners");
 
                 if (ImGuiExt.ColorEdit("Tint", ref CustomSpinnerTint, Helpers.ColorFormat.RGBA, "Change the color of all Frost Helper custom spinners"))
                 {

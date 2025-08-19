@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Reflection;
 using Celeste.Mod.Helpers;
 using Celeste.Mod.MappingUtils.ImGuiHandlers;
@@ -28,11 +29,26 @@ public class MappingUtilsModule : EverestModule
 #endif
     }
 
-    private static MainMappingUtils? Handler;
+    private static MainMappingUtils? _handler;
 
     public override void Load()
     {
-        ImGuiManager.Handlers.Add(Handler = new MainMappingUtils());
+        ImGuiManager.Handlers.Add(_handler = new MainMappingUtils());
+        
+        Metadata.AssemblyContext.Resolving += (context, name) =>
+        {
+            // Microsoft.Diagnostics.NETCore.Client.dll is a mixed-mode dll, which crashes Everest's relinker.
+            // We'll use a different extension to bypass the relinker all together.
+            // Since we need this workaround, we might as well use it for other dll's for better startup/hot reload perf.
+            if (Everest.Content.TryGet($"MappingUtils:/bin/{name.Name}.dll.norelink", out var asset))
+            {
+                var data = asset.Data;
+                using var stream = new MemoryStream(data);
+                return context.LoadFromStream(stream);
+            }
+
+            return null;
+        };
     }
 
     public override void OnInputInitialize()
@@ -44,9 +60,9 @@ public class MappingUtilsModule : EverestModule
     {
         OnUnload?.Invoke();
 
-        if (Handler is { })
+        if (_handler is { })
         {
-            ImGuiManager.Handlers.Remove(Handler);
+            ImGuiManager.Handlers.Remove(_handler);
         }
     }
 

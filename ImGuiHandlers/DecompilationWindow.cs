@@ -1,8 +1,8 @@
 ﻿using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using Celeste.Mod.MappingUtils.Helpers;
 using Celeste.Mod.MappingUtils.ModIntegration;
-using FosterTest;
 using ImGuiColorTextEditNet;
 
 namespace Celeste.Mod.MappingUtils.ImGuiHandlers;

@@ -2,6 +2,7 @@
 using MonoMod.Cil;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Text.RegularExpressions;
 
@@ -202,4 +203,28 @@ internal static partial class Extensions
 
     [GeneratedRegex(@"!\d+")]
     private static partial Regex FixGenericNamesRegex();
+
+    public static TNumber? MaxSafe<TNumber>(this IEnumerable<TNumber> self, TNumber ifEmpty)
+    {
+        if (!self.Any())
+            return ifEmpty;
+        
+        return self.Max();
+    }
+    
+    public static float AverageSafe(this IEnumerable<float> self, float ifEmpty)
+    {
+        if (!self.Any())
+            return ifEmpty;
+        
+        return self.Average();
+    }
+
+    public static TNumber SafeDivide<TNumber>(this TNumber self, TNumber by, TNumber ifByIsZero)
+        where TNumber : struct, INumber<TNumber>
+    {
+        if (by == TNumber.Zero)
+            return ifByIsZero;
+        return self / by;
+    }
 }

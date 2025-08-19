@@ -1,9 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Threading.Tasks;
 using Celeste.Mod.Helpers;
 using ICSharpCode.Decompiler;
@@ -91,7 +88,7 @@ public static class IlSpyCmd
         }
     }
     
-    static DecompilerSettings GetSettings(PEFile module)
+    static DecompilerSettings GetSettings(ICSharpCode.Decompiler.Metadata.PEFile module)
     {
         return new DecompilerSettings(LanguageVersion.Latest) {
             ThrowOnAssemblyResolveErrors = false,
@@ -104,7 +101,7 @@ public static class IlSpyCmd
 
     static CSharpDecompiler GetDecompiler(string assemblyFileName, string[] referencePaths)
     {
-        var module = new PEFile(assemblyFileName);
+        var module = new ICSharpCode.Decompiler.Metadata.PEFile(assemblyFileName);
         var resolver = new UniversalAssemblyResolver(assemblyFileName, false, module.Metadata.DetectTargetFrameworkId());
         foreach (var path in (referencePaths ?? Array.Empty<string>()))
         {
@@ -115,7 +112,7 @@ public static class IlSpyCmd
         };
     }
     
-    static IDebugInfoProvider TryLoadPDB(PEFile module)
+    static IDebugInfoProvider TryLoadPDB(ICSharpCode.Decompiler.Metadata.PEFile module)
     {
         return null!;
     }

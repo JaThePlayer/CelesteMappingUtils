@@ -1,4 +1,6 @@
-﻿namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
+﻿using Celeste.Mod.MappingUtils.Helpers;
+
+namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
 
 public abstract class Tab
 {
@@ -7,6 +9,11 @@ public abstract class Tab
     internal bool OpenLastFrame;
 
     public abstract string Name { get; }
+
+    public virtual void RenderTooltip()
+    {
+        
+    }
 
     public abstract void Render(Level? level);
 

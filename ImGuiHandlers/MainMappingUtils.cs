@@ -1,7 +1,6 @@
 ﻿using Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
 using Celeste.Mod.MappingUtils.ModIntegration;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Celeste.Mod.MappingUtils.ImGuiHandlers;
@@ -17,8 +16,10 @@ public class MainMappingUtils : ImGuiHandler
         new StylegroundViewTab(),
         new ProfilingTab(),
         new HooksTab(),
-        // new ParticleTab(), - exporting unimplemented, overrides Dust particle.
+        new ParticleTab(),
+        new GcTab(),
         // new LogTab(), //- not quite there yet, doesn't live reload :/
+        //new EntitiesTab(), // not sure how useful this is yet
     ];
 
     public static bool Enabled { get; set; }
@@ -101,6 +102,7 @@ public class MainMappingUtils : ImGuiHandler
 
             try
             {
+                tab.RenderTooltip();
                 tab.Render(Engine.Scene as Level);
             }
             finally

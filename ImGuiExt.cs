@@ -23,7 +23,33 @@ public static class ImGuiExt
     {
         if (tooltip is { } && ImGui.IsItemHovered())
         {
-            ImGui.SetTooltip(tooltip);
+            ImGui.BeginTooltip();
+            ImGui.Text(tooltip);
+            ImGui.EndTooltip();
+        }
+
+        return val;
+    }
+    
+    public static bool WithTooltip(this bool val, Action tooltip)
+    {
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            tooltip();
+            ImGui.EndTooltip();
+        }
+
+        return val;
+    }
+    
+    public static bool WithTooltip<T>(this bool val, T data, Action<T> tooltip)
+    {
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            tooltip(data);
+            ImGui.EndTooltip();
         }
 
         return val;
@@ -35,6 +61,26 @@ public static class ImGuiExt
         {
             ImGui.BeginTooltip();
             ImGui.Text(tooltip);
+            ImGui.EndTooltip();
+        }
+    }
+    
+    public static void AddTooltip<T>(T data, Action<T> tooltip)
+    {
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            tooltip(data);
+            ImGui.EndTooltip();
+        }
+    }
+
+    public static void AddAddedByModTooltip(string modName)
+    {
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.BeginTooltip();
+            ImGui.TextColored(Color.LightGray.ToNumVec4(), $"Added by mod '{modName}'");
             ImGui.EndTooltip();
         }
     }
@@ -173,7 +219,7 @@ public static class ImGuiExt
         .Get<ImGuiManager>("imGuiManager")!)
         .Get<ImGuiRenderer>("renderer")!;
     
-    public static void XnaWidget(string id, int w, int h, Action renderFunc, Matrix matrix, bool rerender = true) {
+    public static void XnaWidget(string id, int w, int h, Action renderFunc, Matrix matrix, bool rerender = true, float imguiScale = 1f) {
         if (w <= 0 || h <= 0)
             return;
 
@@ -193,7 +239,7 @@ public static class ImGuiExt
         }
 
         ImGui.PushStyleVar(ImGuiStyleVar.Alpha, 1f);
-        ImGui.Image(t.ID, new(w, h));
+        ImGui.Image(t.ID, new NumVector2(w, h) * imguiScale);
         ImGui.PopStyleVar(1);
         
         if ((rerender || isNew) && ImGui.IsItemVisible())

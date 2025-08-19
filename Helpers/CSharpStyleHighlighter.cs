@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using ImGuiColorTextEditNet;
 
-namespace FosterTest;
+namespace Celeste.Mod.MappingUtils.Helpers;
 
 public class CSharpStyleHighlighter : ISyntaxHighlighter
 {

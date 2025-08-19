@@ -9,6 +9,7 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using Celeste.Mod.MappingUtils.Helpers;
 
 namespace Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
 
@@ -34,13 +35,13 @@ internal class ProfilingTab : Tab
     private static readonly ILContext.Manipulator RendererListBeforeRenderManipulator =
         (il) => InjectProfiling<Renderer, Renderer>(il, "BeforeRender", "BeforeRender", EndBeforeRender, (c) =>
     {
-        c.Emit(OpCodes.Call, typeof(Draw).GetProperty("Renderer")!.GetGetMethod());
+        c.Emit(OpCodes.Call, typeof(Draw).GetProperty("Renderer")!.GetGetMethod()!);
     });
 
     private static readonly ILContext.Manipulator RendererListRenderManipulator =
     (il) => InjectProfiling<Renderer, Renderer>(il, "Render", "Render", EndRender, (c) =>
     {
-        c.Emit(OpCodes.Call, typeof(Draw).GetProperty("Renderer")!.GetGetMethod());
+        c.Emit(OpCodes.Call, typeof(Draw).GetProperty("Renderer")!.GetGetMethod()!);
     });
 
     private static readonly ILContext.Manipulator RendererListUpdateManipulator =
@@ -349,7 +350,7 @@ internal class ProfilingTab : Tab
         var totalTime = allInfos.Aggregate(TimeSpan.Zero, (t, kv) => t + kv.Item2.TotalTime);
         var frameTime = TimeSpan.FromSeconds(1 / 60.0d);
 
-        ImGui.Text($"FPS Score: {(int)(60 / (totalTime.TotalSeconds / ClearFrameCount))}");
+        ImGuiUtf8.TextUnformatted($"FPS Score: {(int)(60 / (totalTime.TotalSeconds / ClearFrameCount))}");
         ImGuiExt.AddTooltip("""
             The amount of FPS you'd get if the framerate was uncapped and the time tracked by the profiler was all the time the game spent each frame.
             In reality, you'd never be able to get even close to this FPS, but this number can be used to compare the performance of different rooms/maps.
@@ -416,19 +417,19 @@ internal class ProfilingTab : Tab
                     str => MappingUtilsModule.Settings.ProfilerHookedMethods.FirstOrDefault(m => m.Name == str)?.FindMethod()?.GetID() ?? "unknown"
                 );
 
-                ImGui.Text($"Full Name: {fullName}");
+                ImGuiUtf8.TextUnformatted($"Full Name: {fullName}");
 
                 if (name.AsT1() is { } type && FrostHelperAPI.LoadIfNeeded() && FrostHelperAPI.EntityNameFromType is { } nameFromType
                     && nameFromType(type) is { } sid)
                 {
-                    ImGui.Text($"SID: {sid}");
+                    ImGuiUtf8.TextUnformatted($"SID: {sid}");
                 }
 
                 ImGui.EndTooltip();
             }
 
             ImGui.TableNextColumn();
-            ImGui.Text((info.Count / ClearFrameCount).ToString());
+            ImGuiUtf8.TextUnformatted($"{info.Count / ClearFrameCount}");
             RenderPercent(info.TotalTime, totalTime, 2f);
             RenderPercent(info.TotalTime, frameTime * ClearFrameCount, 20f);
 
@@ -445,7 +446,7 @@ internal class ProfilingTab : Tab
                 var color = Color.Lerp(Color.White, Color.Red, (float)p * colorMult);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), p.ToString("0.0%\\%", CultureInfo.InvariantCulture));
+                ImGui.TextColored(color.ToNumVec4(), Interpolator.Temp($"{(p*100):F1}%%"));
             }
 
             static void RenderTime(TimeSpan time, TimeSpan totalTime)
@@ -457,7 +458,7 @@ internal class ProfilingTab : Tab
                     return;
                 
                 var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
-                ImGui.TextColored(color.ToNumVec4(), timeMs.ToString("0.###"));
+                ImGui.TextColored(color.ToNumVec4(), Interpolator.Temp($"{timeMs:F3}"));
             }
         }
 
@@ -574,7 +575,7 @@ internal class ProfilingTab : Tab
         }
         
         /// <summary>
-        /// Same as Stop, but doesn't decreate 'Count', used when the profiling has to stopped midway through a frame.
+        /// Same as Stop, but doesn't decreate 'Count', used when the profiling has to be stopped midway through a frame.
         /// </summary>
         /// <param name="into"></param>
         public void StopNoCountIncrease(Section into)

@@ -1,13 +1,20 @@
-﻿namespace Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
 
 internal class FlagTab : Tab
 {
+    private bool _sort;
+    
     public override string Name => "Flags";
 
     public override void Render(Level? level)
     {
         if (level is null)
             return;
+        
+        ImGui.Checkbox("Sort Alphabetically", ref _sort);
         
         var flags = level.Session.Flags;
 
@@ -19,7 +26,7 @@ internal class FlagTab : Tab
         ImGui.TableSetupColumn("Flag", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
         
-        foreach (var f in flags)
+        foreach (var f in _sort ? flags.OrderBy(x=>x) : (IEnumerable<string>)flags)
         {
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ItemWidth);

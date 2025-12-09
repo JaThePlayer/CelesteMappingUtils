@@ -4,6 +4,7 @@ using System.Reflection;
 using Celeste.Mod.Helpers;
 using Celeste.Mod.MappingUtils.ImGuiHandlers;
 using Celeste.Mod.MappingUtils.ModIntegration;
+using MonoMod.ModInterop;
 
 namespace Celeste.Mod.MappingUtils;
 
@@ -33,6 +34,11 @@ public class MappingUtilsModule : EverestModule
 
     public override void Load()
     {
+        typeof(Api.Misc).ModInterop();
+        typeof(Api.Tabs).ModInterop();
+        typeof(Api.ParticleExport).ModInterop();
+        typeof(Api.ImGuiExport).ModInterop();
+        
         ImGuiManager.Handlers.Add(_handler = new MainMappingUtils());
         
         Metadata.AssemblyContext.Resolving += (context, name) =>

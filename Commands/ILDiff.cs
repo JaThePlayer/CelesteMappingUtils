@@ -3,11 +3,15 @@ using Celeste.Mod.MappingUtils.Helpers;
 using Celeste.Mod.MappingUtils.ModIntegration;
 using MonoMod.RuntimeDetour;
 using MonoMod.Utils;
+using System.Buffers.Binary;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -15,6 +19,7 @@ using Celeste.Mod.MappingUtils.ImGuiHandlers;
 
 namespace Celeste.Mod.MappingUtils.Commands;
 
+using OPC = System.Reflection.Emit.OpCodes;
 public static class ILDiff
 {
     [Command("ildiff", "[Mapping Utils] Creates a diff of the IL of a method and its IL hooks, and logs it to the console.")]
@@ -164,7 +169,167 @@ public static class ILDiff
         return builder.ToString();
     }
 
+    static void ThrowIf([NotNull] object? src, [CallerArgumentExpression(nameof(src))] string caller = default!)
+    {
+        if (src is null)
+        {
+            throw new NullReferenceException(caller);
+        }
+    }
 
+    static Func<object, T> CreateGetter<T>(this FieldInfo? field, [CallerArgumentExpression(nameof(field))] string caller = default!)
+    {
+        ThrowIf(field, caller);
+        var method = new DynamicMethod($"get_{field.Name}", typeof(T), [typeof(object), typeof(object)]);
+        var il = method.GetILGenerator();
+
+        il.Emit(OPC.Ldarg_1);
+        il.Emit(OPC.Castclass, field.DeclaringType!);
+        il.Emit(OPC.Ldfld, field);
+        if (field.FieldType.IsValueType && !typeof(T).IsValueType)
+        {
+            il.Emit(OPC.Box);
+        }
+        il.Emit(OPC.Ret);
+
+        return method.CreateDelegate<Func<object, T>>(field);
+    }
+    static FieldInfo? m_scope;
+    static Type? m_dynamicscope;
+    static FieldInfo? m_ILStream;
+    static FieldInfo? m_tokens;
+
+    static Func<object, object>? get_scope;
+    static Func<object, byte[]>? get_ILStream;
+    static Func<object, List<object>>? get_tokens;
+
+    static Func<object, RuntimeMethodHandle>? get_methodHandle;
+    static Func<object, RuntimeTypeHandle>? get_context;
+
+    internal static MethodBase TryGetActualEntry(this MethodBase method)
+    {
+        const BindingFlags bf = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
+        try
+        {
+            if (method is DynamicMethod dm)
+            {
+                var dil = dm.GetILGenerator();
+                m_scope ??= dil.GetType().GetField("m_scope", bf);
+                ThrowIf(m_scope);
+                get_scope ??= m_scope.CreateGetter<object>();
+                get_ILStream ??= dil.GetType().BaseType!.GetField("m_ILStream", bf).CreateGetter<byte[]>();
+                get_tokens ??= m_scope.FieldType.GetField("m_tokens", bf).CreateGetter<List<object>>();
+
+                var ilstream = get_ILStream(dil);
+                ThrowIf(ilstream);
+                var scope = get_scope(dil);
+                ThrowIf(scope);
+                var tokens = get_tokens(scope);
+                ThrowIf(tokens);
+
+                var ils = ilstream.AsSpan();
+                static bool TrimLdcI4(ref Span<byte> self)
+                {
+                    if (self is [0x20, _, _, _, _, ..])
+                    {
+                        self = self[5..];
+                    }
+                    else if (self is [>= 0x15 and <= 0x1e, ..])
+                    {
+                        self = self[1..];
+                    }
+                    else if (self is [0x1f, _, ..])
+                    {
+                        self = self[2..];
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                    return true;
+                }
+                static void TrimLdRef(ref Span<byte> self)
+                {
+                    var a = TrimLdcI4(ref self);
+                    var b = TrimLdcI4(ref self);
+                    if (a != b || (a && self is not [0x28, _, _, _, _, ..]))
+                    {
+                        throw new InvalidOperationException("not ldref");
+                    }
+                    if (a)
+                    {
+                        self = self[5..];
+                    }
+                }
+                TrimLdRef(ref ils);
+                TrimLdRef(ref ils);
+                var c = dm.GetParameters().Length;
+                static void throwparam() => throw new InvalidOperationException("param count does not match");
+                static void TrimLdarg(ref Span<byte> self, int hint)
+                {
+                    var x = (byte)(hint & 0xff);
+                    var y = (byte)((hint >> 8) & 0xff);
+                    if (self is [0xFE, 0x09, { } a, { } b, ..] _ && a == x && b == y) // little endian
+                    {
+                        self = self[4..];
+                    }
+                    else if (self is [0x0e, { } c, ..] && c == hint)
+                    {
+                        self = self[2..];
+                    }
+                    else if (self is [{ } d and >= 0x02 and <= 0x05, ..] && hint + 0x02 == d)
+                    {
+                        self = self[1..];
+                    }
+                    else
+                    {
+                        throwparam();
+                    }
+                }
+                for (int i = 0; i < c; i++)
+                {
+                    TrimLdarg(ref ils, i);
+                }
+                if (ils[0] != 0x28)
+                {
+                    throwparam();
+                }
+                ils = ils[1..];
+                var token = BinaryPrimitives.ReadInt32LittleEndian(ils) & 0xffffff;
+                if (ils[4..] is not [0x2A, ..])
+                {
+                    throw new InvalidOperationException("not ret");
+                }
+                static MethodBase? Generic(object o)
+                {
+                    var a = o.GetType();
+                    if (a.GetType().Name == "GenericMethodInfo")
+                    {
+                        get_methodHandle ??= a.GetField("m_methodHandle", bf).CreateGetter<RuntimeMethodHandle>();
+                        get_context ??= a.GetField("m_context", bf).CreateGetter<RuntimeTypeHandle>();
+                        return MethodBase.GetMethodFromHandle(get_methodHandle(o), get_context(o));
+                    }
+                    return null;
+                }
+                return tokens[token] switch
+                {
+                    RuntimeMethodHandle r => MethodBase.GetMethodFromHandle(r) ?? method,
+                    DynamicMethod d => d,
+                    { } what => Generic(what) ?? method,
+                    _ => method,
+                };
+            }
+            else
+            {
+                return method;
+            }
+        }
+        catch
+        {
+            return method;
+        }
+    }
+    
     private static string NameAsValidFilename(string name)
     {
         return new string(name.Select(c => FilenameInvalidChars.Contains(c) ? '_' : c).ToArray());

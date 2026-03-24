@@ -194,6 +194,8 @@ public static class ImGuiExt
 
     public static void AddDecompilationTooltip(MethodBase method)
     {
+        if (method.IsDynamicMethod())
+            return;
         if (method.DeclaringType is not { } decl)
             return;
         

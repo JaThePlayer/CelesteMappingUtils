@@ -139,11 +139,11 @@ internal sealed class GcTab : Tab
         /*
         _pausesForPlot.CopyTo(_pausesForPlotSorted, 0);
         _pausesForPlotSorted.AsSpan().Sort();
-        ImGui.Text($"P99.9 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.999)).SafeMax(0)}ms");
-        ImGui.Text($"P99 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.99)).SafeMax(0)}ms");
-        ImGui.Text($"P95 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.95)).SafeMax(0)}ms");
-        ImGui.Text($"P90 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.9)).SafeMax(0)}ms");
-        ImGui.Text($"P80 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.8)).SafeMax(0)}ms");
+        ImGui.TextUnformatted($"P99.9 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.999)).SafeMax(0)}ms");
+        ImGui.TextUnformatted($"P99 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.99)).SafeMax(0)}ms");
+        ImGui.TextUnformatted($"P95 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.95)).SafeMax(0)}ms");
+        ImGui.TextUnformatted($"P90 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.9)).SafeMax(0)}ms");
+        ImGui.TextUnformatted($"P80 GC Pause: {_pausesForPlotSorted.Take((int)(pauseAmt * 0.8)).SafeMax(0)}ms");
         */
         ImGui.PlotHistogram("GC Times:", ref _pausesForPlot[0], _pausesForPlot.Length, 0, "GC Pause Times", 0f, 32f, ImGui.GetContentRegionAvail());
     }

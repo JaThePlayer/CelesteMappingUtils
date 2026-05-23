@@ -48,7 +48,7 @@ public class EntitiesTab : Tab
                 _selectedEntity = null;
             }
             ImGui.SameLine();
-            ImGui.Text(displayName);
+            ImGui.TextUnformatted(displayName);
             
             if (open)
             {
@@ -108,7 +108,7 @@ public class EntitiesTab : Tab
             }
             
             ImGui.TableNextColumn();
-            ImGui.Text(group.Count().ToString());
+            ImGui.TextUnformatted(group.Count().ToString());
         }
         
         ImGui.EndTable();

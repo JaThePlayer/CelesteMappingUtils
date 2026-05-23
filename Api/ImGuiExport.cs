@@ -11,7 +11,7 @@ namespace Celeste.Mod.MappingUtils.Api;
 public static class ImGuiExport
 {
     [MinMappingUtilsVersion("1.10.1")]
-    public static void Text(string txt) => ImGui.Text(txt);
+    public static void Text(string txt) => ImGui.TextUnformatted(txt);
     
     [MinMappingUtilsVersion("1.10.1")]
     public static bool Button(string label) => ImGui.Button(label);

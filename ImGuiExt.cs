@@ -24,7 +24,7 @@ public static class ImGuiExt
         if (tooltip is { } && ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.Text(tooltip);
+            ImGui.TextUnformatted(tooltip);
             ImGui.EndTooltip();
         }
 
@@ -60,7 +60,7 @@ public static class ImGuiExt
         if (tooltip is { } && ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.Text(tooltip);
+            ImGui.TextUnformatted(tooltip);
             ImGui.EndTooltip();
         }
     }
@@ -80,9 +80,35 @@ public static class ImGuiExt
         if (ImGui.IsItemHovered())
         {
             ImGui.BeginTooltip();
-            ImGui.TextColored(Color.LightGray.ToNumVec4(), $"Added by mod '{modName}'");
+            TextColoredUnformatted(Color.LightGray.ToNumVec4(), $"Added by mod '{modName}'");
             ImGui.EndTooltip();
         }
+    }
+
+    // NOTE:
+    // ImGui's text widgets accept printf-style formatting except for TextUnformatted.
+    // be careful when passing arbitrary text that could contain a percent sign (%),
+    // as it will be interpreted as a format specifier and perform out-of-bounds accesses.
+    // the following text methods are affected:
+    // - ImGui.Text()
+    // - ImGui.TextColored()
+    // - ImGui.TextDisabled()
+    // - ImGui.TextWrapped()
+    // - ImGui.LabelText() (second argument)
+    // - ImGui.BulletText()
+
+    public static void TextColoredUnformatted(NumVector4 color, string text)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.TextUnformatted(text);
+        ImGui.PopStyleColor();
+    }
+
+    public static void TextColoredUnformatted(NumVector4 color, ReadOnlySpan<char> text)
+    {
+        ImGui.PushStyleColor(ImGuiCol.Text, color);
+        ImGui.TextUnformatted(text);
+        ImGui.PopStyleColor();
     }
 
     public static bool ColorEdit(string label, ref Color color, ColorFormat format, string? tooltip = null)
@@ -130,7 +156,7 @@ public static class ImGuiExt
 
 
         ImGui.SameLine(0f, xPadding);
-        ImGui.Text(label);
+        ImGui.TextUnformatted(label);
         true.WithTooltip(tooltip);
 
         return edited;

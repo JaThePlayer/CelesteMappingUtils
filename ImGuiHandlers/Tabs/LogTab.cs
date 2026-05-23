@@ -21,7 +21,7 @@ public class LogTab : Tab
     {
         if (Everest.PathLog is not { })
         {
-            ImGui.Text("The Everest log is disabled.");
+            ImGui.TextUnformatted("The Everest log is disabled.");
             return;
         }
         
@@ -113,12 +113,14 @@ public class LogTab : Tab
         private static readonly Regex LogLineRegex = new(@"^\(.+?\) \[(.+?)\] \[(.+?)\] \[(.+?)\]", RegexOptions.Compiled);
         
         public LogLevel LogLevel { get; }
-        
+
         public string Line { get; }
 
         public LogEntry(string line)
         {
-            Line = line;
+            // this will be passed to ImGui.TextWrapped which accepts printf-style formatting;
+            // we need to escape percent signs to prevent accidental format specifiers
+            Line = line.Replace("%", "%%");
 
             if (LogLineRegex.Match(line) is { Success: true } match)
             {

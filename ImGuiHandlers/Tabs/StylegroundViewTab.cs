@@ -31,7 +31,7 @@ public class StylegroundViewTab : Tab
 
         if (Selection is { } s)
         {
-            ImGui.Text($"Edit style - {GetName(s)}");
+            ImGui.TextUnformatted($"Edit style - {GetName(s)}");
 
             ImGui.SetNextItemWidth(ItemWidth);
             ImGuiExt.ColorEdit("Color", ref s.Color, Helpers.ColorFormat.RGBA, null);
@@ -217,7 +217,7 @@ public class StylegroundViewTab : Tab
             ImGui.BeginDisabled();
         }
 
-        ImGui.Text(GetName(style));
+        ImGui.TextUnformatted(GetName(style));
 
         RenderOtherTabs(style);
 
@@ -233,7 +233,7 @@ public class StylegroundViewTab : Tab
 
         var only = style.OnlyIn;
 
-        ImGui.Text(only is { } ? string.Join(',', only) : "");
+        ImGui.TextUnformatted(only is { } ? string.Join(',', only) : "");
     }
 
     private static string GetName(Backdrop style)

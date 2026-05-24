@@ -403,7 +403,7 @@ internal class ProfilingTab : Tab
                 (string str) => MappingUtilsModule.Settings.ProfilerHookedMethods.FirstOrDefault(m => m.Name == str)?.FindMethod()?.DeclaringType
             );
             
-            ImGui.Text(GetName(name));
+            ImGui.TextUnformatted(GetName(name));
             if (declaringType is { })
             {
                 ImGuiExt.AddDecompilationTooltip(declaringType, null);
@@ -446,7 +446,7 @@ internal class ProfilingTab : Tab
                 var color = Color.Lerp(Color.White, Color.Red, (float)p * colorMult);
 
                 ImGui.TableNextColumn();
-                ImGui.TextColored(color.ToNumVec4(), Interpolator.Temp($"{(p*100):F1}%%"));
+                ImGuiExt.TextColoredUnformatted(color.ToNumVec4(), Interpolator.Temp($"{(p*100):F1}%%"));
             }
 
             static void RenderTime(TimeSpan time, TimeSpan totalTime)
@@ -458,7 +458,7 @@ internal class ProfilingTab : Tab
                     return;
                 
                 var color = Color.Lerp(Color.White, Color.Red, (float)(time / totalTime) * 20f);
-                ImGui.TextColored(color.ToNumVec4(), Interpolator.Temp($"{timeMs:F3}"));
+                ImGuiExt.TextColoredUnformatted(color.ToNumVec4(), Interpolator.Temp($"{timeMs:F3}"));
             }
         }
 

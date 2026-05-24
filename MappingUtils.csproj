@@ -7,11 +7,9 @@
         <LangVersion>12.0</LangVersion>
         <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
         <Nullable>enable</Nullable>
-        <Optimize>True</Optimize>
+        <!-- <Optimize>True</Optimize> -->
 
-        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste-core\Celeste.exe')">..\..\..\Celeste-core</CelestePrefix>
-        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\Celeste.exe')">..\..</CelestePrefix>
-        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\..\Celeste.exe')">..\..\..</CelestePrefix>
+        <CelestePrefix Condition="'$(CelestePrefix)' == '' And Exists('..\..\Celeste.dll')">..\..</CelestePrefix>
         <CelestePrefix Condition="'$(CelestePrefix)' == ''">lib-stripped</CelestePrefix>
     </PropertyGroup>
 
@@ -21,65 +19,41 @@
         <Reference Private="false" />
     </ItemDefinitionGroup>
 -->
+
     <ItemGroup>
-        <PackageReference Include="CelesteAnalyzer" Version="1.0.3.1" />
+        <PackageReference Include="MonoMod.RuntimeDetour" Version="25.3.1" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="MonoMod.Patcher" Version="25.0.0-prerelease.2" />
+        <PackageReference Include="CelesteAnalyzer" Version="*" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <PackageReference Include="CelesteMod.Publicizer" Version="*" CelesteAssembly="$(CelestePrefix)\Celeste.dll" />
+        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll" Private="false" />
+        <Reference Include="$(CelestePrefix)\FNA.dll" Private="false" />
+    </ItemGroup>
+
+    <ItemGroup>
         <PackageReference Include="ICSharpCode.Decompiler" Version="9.0.0.7660-preview2">
             <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive; runtime</IncludeAssets>
         </PackageReference>
-
-        <PackageReference Include="Mono.Cecil" Version="0.11.5" />
 
         <PackageReference Include="Newtonsoft.Json" Version="13.0.1" PrivateAssets="all" ExcludeAssets="runtime" />
         <PackageReference Include="ImGui.NET" Version="1.91.0.1">
           <PrivateAssets>all</PrivateAssets>
           <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
-
-        <PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.0">
-            <PrivateAssets>all</PrivateAssets>
-            <IncludeAssets>build</IncludeAssets>
-        </PackageReference>
     </ItemGroup>
 
     <ItemGroup>
-        <Reference Include="$(CelestePrefix)\Celeste.dll" Publicize="true">
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="$(CelestePrefix)\MonoMod.exe">
-          <Private>false</Private>
-        </Reference>
-        <Reference Include="$(CelestePrefix)\MonoMod.RuntimeDetour.dll">
-          <Private>false</Private>
-        </Reference>
-        <Reference Include="$(CelestePrefix)\MonoMod.Utils.dll">
-          <Private>false</Private>
-        </Reference>
-        <Reference Include="$(CelestePrefix)\MMHOOK_Celeste.dll">
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="$(CelestePrefix)\FNA.dll">
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="ImGuiHelper">
-            <HintPath>lib\ImGuiHelper.dll</HintPath>
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="ImGuiColorTextEditNet">
-            <HintPath>lib\ImGuiColorTextEditNet.dll</HintPath>
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="Microsoft.Diagnostics.NETCore.Client">
-            <HintPath>lib\eventTrace\Microsoft.Diagnostics.NETCore.Client.dll</HintPath>
-            <Private>false</Private>
-        </Reference>
-        <Reference Include="Microsoft.Diagnostics.Tracing.TraceEvent">
-            <HintPath>lib\eventTrace\Microsoft.Diagnostics.Tracing.TraceEvent.dll</HintPath>
-            <Private>false</Private>
-        </Reference>
+        <Reference Include="lib\ImGuiHelper.dll" Private="false"/>
+        <Reference Include="lib\ImGuiColorTextEditNet.dll" Private="false"/>
+        <Reference Include="lib\eventTrace\Microsoft.Diagnostics.NETCore.Client.dll" Private="false"/>
+        <Reference Include="lib\eventTrace\Microsoft.Diagnostics.Tracing.TraceEvent.dll" Private="false"/>
     </ItemGroup>
 
     <Target Name="CopyFiles" AfterTargets="Build">
         <Copy SourceFiles="$(OutputPath)\$(AssemblyName).dll" DestinationFolder="bin" />
+        <Copy SourceFiles="$(OutputPath)\$(AssemblyName).pdb" DestinationFolder="bin" />
         <Copy SourceFiles="lib\ImGuiColorTextEditNet.dll" DestinationFolder="bin" />
         <Copy SourceFiles="lib\ImGuiColorTextEditNet.LICENSE.txt" DestinationFolder="bin" />
         <Copy SourceFiles="lib\ICSharpCode.Decompiler.dll" DestinationFolder="bin" />

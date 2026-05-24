@@ -52,7 +52,7 @@ internal sealed class IlDiffView(MethodDiff diff) : ImGuiHandler
                 _ => throw new ArgumentOutOfRangeException()
             }).ToNumVec4();
                 
-            ImGui.TextColored(color, instr.Type switch
+            ImGuiExt.TextColoredUnformatted(color, instr.Type switch
             {
                 MethodDiff.ElementType.Unchanged => "",
                 MethodDiff.ElementType.Added => "+",
@@ -61,7 +61,7 @@ internal sealed class IlDiffView(MethodDiff diff) : ImGuiHandler
             });
                 
             ImGui.TableNextColumn();
-            ImGui.TextColored(color, instr.Instruction.FixedToString());
+            ImGuiExt.TextColoredUnformatted(color, instr.Instruction.FixedToString());
                 
             ImGui.TableNextColumn();
 
@@ -79,7 +79,7 @@ internal sealed class IlDiffView(MethodDiff diff) : ImGuiHandler
 
                     ImGui.TableNextColumn();
                     
-                    ImGui.TextColored(Color.Orange.ToNumVec4(), additional);
+                    ImGuiExt.TextColoredUnformatted(Color.Orange.ToNumVec4(), additional);
                 }
             }
         }

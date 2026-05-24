@@ -29,9 +29,9 @@ internal class CountersTab : Tab
         foreach (var c in counters)
         {
             ImGui.TableNextColumn();
-            ImGui.Text("Counter");
+            ImGui.TextUnformatted("Counter");
             ImGui.TableNextColumn();
-            ImGui.Text(c.Key);
+            ImGui.TextUnformatted(c.Key);
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ImGui.GetColumnWidth());
             ImGui.InputInt($"##c_{c.Key}", ref c.Value, 1, 1);
@@ -41,9 +41,9 @@ internal class CountersTab : Tab
         foreach (var (name, slider) in sliders)
         {
             ImGui.TableNextColumn();
-            ImGui.Text("Slider");
+            ImGui.TextUnformatted("Slider");
             ImGui.TableNextColumn();
-            ImGui.Text(name);
+            ImGui.TextUnformatted(name);
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ImGui.GetColumnWidth());
             var value = slider.Value;

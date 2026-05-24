@@ -258,7 +258,7 @@ internal static class ParticleExporterRegistry
     {
         if (ImGui.Button($"{name} [{modName}]").WithTooltip(tooltip).WithTooltip(() =>
             {
-                ImGui.TextColored(Color.LightGray.ToNumVec4(), $"Requires mod '{modName}'");
+                ImGuiExt.TextColoredUnformatted(Color.LightGray.ToNumVec4(), $"Requires mod '{modName}'");
             }))
         {
             var text = exportFunc(particle);
@@ -283,7 +283,7 @@ internal static class ParticleExporterRegistry
         
         if (ImGui.Button($"{name} [{modName}]").WithTooltip(tooltip).WithTooltip(() =>
             {
-                ImGui.TextColored(Color.LightGray.ToNumVec4(), $"Requires mod '{modName}'");
+                ImGuiExt.TextColoredUnformatted(Color.LightGray.ToNumVec4(), $"Requires mod '{modName}'");
             }))
         {
             var text = exportFunc(particle, emitter);

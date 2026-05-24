@@ -36,7 +36,7 @@ internal sealed class HooksTab : Tab
 
         if (_detourInfo is { })
         {
-            ImGui.Text(_selectedMethod.GetMethodNameForDB());
+            ImGui.TextUnformatted(_selectedMethod.GetMethodNameForDB());
 
             ImGui.Button("Decompile");
             ImGuiExt.AddDecompilationTooltip(_selectedMethod);
@@ -60,26 +60,26 @@ internal sealed class HooksTab : Tab
                     {
                         case ILHookInfo ilHook:
                         {
-                            ImGui.Text(ilHook.ManipulatorMethod.Name);
+                            ImGui.TextUnformatted(ilHook.ManipulatorMethod.Name);
                             ImGui.TableNextColumn();
 
-                            ImGui.Text("IL");
+                            ImGui.TextUnformatted("IL");
                             ImGui.TableNextColumn();
 
-                            ImGui.Text(ilHook.ManipulatorMethod.GetMethodNameForDB());
+                            ImGui.TextUnformatted(ilHook.ManipulatorMethod.GetMethodNameForDB());
                             ImGuiExt.AddDecompilationTooltip(ilHook.ManipulatorMethod);
                             ImGui.TableNextColumn();
                             break;
                         }
                         case DetourInfo hook:
                         {
-                            ImGui.Text(hook.Entry.Name);
+                            ImGui.TextUnformatted(hook.Entry.Name);
                             ImGui.TableNextColumn();
                             
-                            ImGui.Text("On");
+                            ImGui.TextUnformatted("On");
                             ImGui.TableNextColumn();
 
-                            ImGui.Text(hook.Entry.GetMethodNameForDB());
+                            ImGui.TextUnformatted(hook.Entry.GetMethodNameForDB());
                             ImGuiExt.AddDecompilationTooltip(hook.Entry);
                             ImGui.TableNextColumn();
                             break;

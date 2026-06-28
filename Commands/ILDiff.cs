@@ -87,7 +87,7 @@ public static class ILDiff
                 Directory.CreateDirectory(dir);
                 fileList.Add("allhooks.txt");
 
-                var allHooks = detourInfo.Detours.Select(d => $"On: {d.Entry.GetID()}")
+                var allHooks = detourInfo.Detours.Select(d => $"On: {d.GetActualEntry().GetID()}")
                     .Concat(detourInfo.ILHooks.Select(d => $"IL: {d.ManipulatorMethod.GetID()}")).ToList();
                 
                 db.Methods.Add(new(methodName, methodNameAsDirName, allHooks));

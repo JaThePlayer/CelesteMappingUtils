@@ -31,6 +31,15 @@ internal sealed class ParticleTab : Tab
     public Chooser<MTexture> SourceChooser;
 
      */
+
+    private ParticleEmitter CreateEmitter()
+    {
+        var dummy = new Entity();
+        var emitter = new ParticleEmitter(_system, _particle, default, default, 1, 0f);
+        dummy.Add(emitter);
+
+        return emitter;
+    }
     
     public override void Render(Level? level)
     {
@@ -43,12 +52,7 @@ internal sealed class ParticleTab : Tab
             Source = GFX.Game["particles/smoke0"] // TODO: support SourceChooser.
         };
         
-        if (_emitter is null)
-        {
-            var dummy = new Entity();
-            _emitter = new ParticleEmitter(_system, _particle, default, default, 1, 0f);
-            dummy.Add(_emitter);
-        }
+        _emitter ??= CreateEmitter();
 
         _emitter.Position = new Vector2(w / scale / 2f, h / scale / 2f);
         
@@ -125,6 +129,16 @@ internal sealed class ParticleTab : Tab
             }
             ImGui.EndDisabled();
             
+            ImGui.SeparatorText("Import");
+            foreach (var importer in ParticleImporterRegistry.Entries)
+            {
+                if (importer.ImGuiRenderFunc() is { } newData)
+                {
+                    _particle = newData.Item1;
+                    _emitter = newData.Item2 ?? CreateEmitter();
+                }
+            }
+            
             ImGui.SeparatorText("Export");
             foreach (var exporter in ParticleExporterRegistry.Exporters)
             {
@@ -147,17 +161,7 @@ internal sealed class ParticleTab : Tab
 
 internal static class ParticleExporterRegistry
 {
-    private static string ToCSharpConstructorCode(Color color) => $"new Color({color.R}, {color.G}, {color.B}, {color.A})";
-    private static string ToCSharpConstructorCode(Vector2 v) => $"new Vector2({v.X}f, {v.Y}f)";
-    private static string ToCSharpConstructorCode(float f) => $"{f}f";
-    private static string ToCSharpConstructorCode(bool b) => b ? "true" : "false";
-
-    private static string ToCSharpConstructorCode<T>(T b) where T : struct, Enum
-    {
-        return $"{b.GetType().FullName}.{b.ToString()}";
-    }
-    
-    private static readonly List<ParticleExporter> _exporters = [
+    private static readonly Registry<ParticleExporter> Registry = [
         new ParticleExporter()
         {
             Name = "C# Declaration",
@@ -245,12 +249,21 @@ internal static class ParticleExporterRegistry
         }
     ];
     
-    public static IEnumerable<ParticleExporter> Exporters => _exporters;
+    private static string ToCSharpConstructorCode(Color color) => $"new Color({color.R}, {color.G}, {color.B}, {color.A})";
+    private static string ToCSharpConstructorCode(Vector2 v) => $"new Vector2({v.X}f, {v.Y}f)";
+    private static string ToCSharpConstructorCode(float f) => $"{f}f";
+    private static string ToCSharpConstructorCode(bool b) => b ? "true" : "false";
+
+    private static string ToCSharpConstructorCode<T>(T b) where T : struct, Enum
+    {
+        return $"{b.GetType().FullName}.{b.ToString()}";
+    }
+    
+    public static IEnumerable<ParticleExporter> Exporters => Registry;
 
     public static void Register(ParticleExporter exporter)
     {
-        _exporters.RemoveAll(x => x.Name == exporter.Name);
-        _exporters.Add(exporter);
+        Registry.Add(exporter);
     }
 
     public static Action<ParticleType, ParticleEmitter> CreateClipboardRenderFunc
@@ -293,9 +306,80 @@ internal static class ParticleExporterRegistry
     };
 }
 
-internal sealed class ParticleExporter
+internal sealed class ParticleExporter : IRegistryEntry
 {
     public required string Name { get; init; }
-    
+    public string? ModName { get; init; }
+
     public required Action<ParticleType, ParticleEmitter> ImGuiRenderFunc { get; init; }
+}
+
+internal static class ParticleImporterRegistry
+{
+    private static NamedParticleType? _namedParticleType;
+    private static readonly ComboCache<NamedParticleType> _namedParticleTypeCache = new();
+    
+    private static readonly Registry<ParticleImporter> Registry = [
+        new()
+        {
+            Name = "FromExisting",
+            ImGuiRenderFunc = () =>
+            {
+                var types = ParticleTypeDiscovery.AllParticles;
+                _namedParticleType ??= types[0];
+                if (ImGuiExt.Combo("From Existing", ref _namedParticleType, types, t => t.Name, _namedParticleTypeCache))
+                {
+                    return (_namedParticleType.ParticleType, null);
+                }
+                
+                return null;
+            },
+        }
+    ];
+    
+    public static IEnumerable<ParticleImporter> Entries => Registry;
+    
+    public static void Register(ParticleImporter importer)
+    {
+        Registry.Add(importer);
+    }
+
+    public static Func<(ParticleType, ParticleEmitter?)?> CreateClipboardRenderFunc(string modName, string name, string tooltip, Func<string, (ParticleType, ParticleEmitter?)> importFunc)
+    {
+        return () =>
+        {
+            if (string.IsNullOrWhiteSpace(modName))
+            {
+                if (ImGui.Button(name).WithTooltip(tooltip))
+                {
+                    var text = TextInput.GetClipboardText();
+                    return importFunc(text);
+                }
+
+                return null;
+            }
+
+            if (ImGui.Button($"{name} [{modName}]").WithTooltip(tooltip).WithTooltip(() =>
+                {
+                    ImGui.TextColored(Color.LightGray.ToNumVec4(), $"Requires mod '{modName}'");
+                }))
+            {
+                if (ImGui.Button(name).WithTooltip(tooltip))
+                {
+                    var text = TextInput.GetClipboardText();
+                    return importFunc(text);
+                }
+            }
+            
+            return null;
+        };
+    }
+}
+
+internal sealed class ParticleImporter : IRegistryEntry
+{
+    public required string Name { get; init; }
+    public string? ModName { get; init; }
+
+    public required Func<(ParticleType, ParticleEmitter?)?> ImGuiRenderFunc { get; init; }
 }

@@ -73,14 +73,15 @@ internal sealed class HooksTab : Tab
                         }
                         case DetourInfo hook:
                         {
-                            ImGui.TextUnformatted(hook.Entry.Name);
+                            var entry = hook.GetActualEntry();
+                            ImGui.TextUnformatted(entry.Name);
                             ImGui.TableNextColumn();
                             
                             ImGui.TextUnformatted("On");
                             ImGui.TableNextColumn();
 
-                            ImGui.TextUnformatted(hook.Entry.GetMethodNameForDB());
-                            ImGuiExt.AddDecompilationTooltip(hook.Entry);
+                            ImGui.TextUnformatted(entry.GetMethodNameForDB());
+                            ImGuiExt.AddDecompilationTooltip(entry);
                             ImGui.TableNextColumn();
                             break;
                         }

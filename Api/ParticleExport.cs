@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-using Celeste.Mod.MappingUtils.Helpers;
 using Celeste.Mod.MappingUtils.ImGuiHandlers.Tabs;
 using MonoMod.ModInterop;
 
@@ -19,7 +17,8 @@ public static class ParticleExport
     {
         ParticleExporterRegistry.Register(new ParticleExporter
         {
-            Name = $"{modName}/{name}",
+            Name = name,
+            ModName = modName,
             ImGuiRenderFunc = ParticleExporterRegistry.CreateClipboardRenderFunc(modName, name, tooltip, exportFunc)
         });
     }
@@ -34,7 +33,44 @@ public static class ParticleExport
     {
         ParticleExporterRegistry.Register(new ParticleExporter
         {
-            Name = $"{modName}/{name}",
+            Name = name,
+            ModName = modName,
+            ImGuiRenderFunc = imguiRender
+        });
+    }
+    
+    /// <summary>
+    /// Registers a Particle Tab importer, which adds a button which imports the particle from the clipboard.
+    /// </summary>
+    /// <param name="modName">The name of the mod needed to make use of this importer.</param>
+    /// <param name="name">The name of this importer, displayed on the button.</param>
+    /// <param name="tooltip">Tooltip displayed when hovering over the button.</param>
+    /// <param name="importFunc">Function called to import the given particle type and emitter from the string.</param>
+    [MinMappingUtilsVersion("1.11.0")]
+    public static void RegisterCopyFromClipboardParticleImporter(string modName, string name, string tooltip, 
+        Func<string, (ParticleType, ParticleEmitter?)> importFunc)
+    {
+        ParticleImporterRegistry.Register(new ParticleImporter
+        {
+            Name = name,
+            ModName = modName,
+            ImGuiRenderFunc = ParticleImporterRegistry.CreateClipboardRenderFunc(modName, name, tooltip, importFunc)
+        });
+    }
+    
+    /// <summary>
+    /// Registers a Particle Tab importer, which allows custom imgui rendering.
+    /// </summary>
+    /// <param name="modName">The name of the mod needed to make use of this importer.</param>
+    /// <param name="name">The name of this importer, used for deduplication on hot reload.</param>
+    /// <param name="imguiRender">Callback which renders the importer via imgui.</param>
+    [MinMappingUtilsVersion("1.11.0")]
+    public static void RegisterParticleImporter(string modName, string name, Func<(ParticleType, ParticleEmitter?)?> imguiRender)
+    {
+        ParticleImporterRegistry.Register(new ParticleImporter
+        {
+            Name = name,
+            ModName = modName,
             ImGuiRenderFunc = imguiRender
         });
     }

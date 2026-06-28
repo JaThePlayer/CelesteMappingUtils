@@ -15,6 +15,7 @@ internal static class SpawnEntity
         "glider",
         //"ExtendedVariantMode/TheoCrystal", - has weird construction code
         "CommunalHelper/DreamJellyfish",
+        "CommunalHelper/DreamTheoCrystal",
         "YetAnotherHelper/StickyJellyfish",
         "NerdHelper/BouncyJellyfish",
         "MaxHelpingHand/RespawningJellyfish",

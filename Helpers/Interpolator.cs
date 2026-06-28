@@ -9,7 +9,9 @@ namespace Celeste.Mod.MappingUtils.Helpers;
 /// </summary>
 internal sealed class Interpolator {
     [ThreadStatic]
-    private static Interpolator _shared;
+    private static Interpolator? _shared;
+    [ThreadStatic]
+    private static Interpolator? _sharedManualClear;
     
     private char[] _buffer = new char[128];
     
@@ -34,7 +36,7 @@ internal sealed class Interpolator {
     /// <summary>
     /// Returns a ThreadStatic, manually cleared, shared buffer
     /// </summary>
-    public static Interpolator SharedManualClear => _shared ??= new() {
+    public static Interpolator SharedManualClear => _sharedManualClear ??= new() {
         ManualClear = true
     };
 

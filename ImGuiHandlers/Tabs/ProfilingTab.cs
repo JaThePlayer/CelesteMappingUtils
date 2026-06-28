@@ -350,11 +350,13 @@ internal class ProfilingTab : Tab
         var totalTime = allInfos.Aggregate(TimeSpan.Zero, (t, kv) => t + kv.Item2.TotalTime);
         var frameTime = TimeSpan.FromSeconds(1 / 60.0d);
 
-        ImGuiUtf8.TextUnformatted($"FPS Score: {(int)(60 / (totalTime.TotalSeconds / ClearFrameCount))}");
+        ImGuiUtf8.TextUnformatted($"FPS Score: {(int)(1 / (totalTime.TotalSeconds / ClearFrameCount))}");
         ImGuiExt.AddTooltip("""
             The amount of FPS you'd get if the framerate was uncapped and the time tracked by the profiler was all the time the game spent each frame.
             In reality, you'd never be able to get even close to this FPS, but this number can be used to compare the performance of different rooms/maps.
-            Never compare the FPS Score between different computers, as its hardware-dependent.
+            Never compare the FPS Score between different computers, as it's hardware-dependent.
+            
+            (NOTE: Versions of Mapping Utils prior to 1.11.0 used to report a number 60 times bigger.)
             """);
 
         const int columnCount = 9;
@@ -575,7 +577,7 @@ internal class ProfilingTab : Tab
         }
         
         /// <summary>
-        /// Same as Stop, but doesn't decreate 'Count', used when the profiling has to be stopped midway through a frame.
+        /// Same as Stop, but doesn't increase 'Count', used when the profiling has to be stopped midway through a frame.
         /// </summary>
         /// <param name="into"></param>
         public void StopNoCountIncrease(Section into)

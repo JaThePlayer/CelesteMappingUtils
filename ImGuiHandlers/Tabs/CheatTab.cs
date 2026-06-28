@@ -12,15 +12,19 @@ internal class CheatTab : Tab
             return;
         
         var fly = Fly.Enabled;
-        if (ImGui.Checkbox("Fly+NoClip", ref fly).WithTooltip("Enables you to freely fly anywhere and noclip through solids"))
+        if (ImGui.Checkbox("Fly+NoClip", ref fly).WithTooltip("Enables you to freely fly anywhere and noclip through solids."))
         {
             Fly.Enabled = fly;
         }
 
+        if (ImGui.Checkbox("Show Hitboxes", ref GameplayRenderer.RenderDebug).WithTooltip("Shows the debug hitboxes."))
+        {
+        }
+        
         ImGui.DragFloat("Fly Speed", ref Fly.SpeedMult, 0.1f, 0.1f);
 
         if (SpawnEntity.Available && ImGuiExt.Combo("Spawn Entity", ref SpawnEntity.LastSummoned, SpawnEntity.SummonableSIDs.Value, (s) => s, SpawnEntity.ComboCache,
-            "Spawns an entity of the selected type next to the player"))
+            "Spawns an entity of the selected type next to the player."))
         {
             SpawnEntity.Spawn(level, SpawnEntity.LastSummoned);
         }

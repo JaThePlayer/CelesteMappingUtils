@@ -448,7 +448,7 @@ internal class ProfilingTab : Tab
                 var color = Color.Lerp(Color.White, Color.Red, (float)p * colorMult);
 
                 ImGui.TableNextColumn();
-                ImGuiExt.TextColoredUnformatted(color.ToNumVec4(), Interpolator.Temp($"{(p*100):F1}%%"));
+                ImGuiExt.TextColoredUnformatted(color.ToNumVec4(), Interpolator.Temp($"{(p*100):F1}%"));
             }
 
             static void RenderTime(TimeSpan time, TimeSpan totalTime)

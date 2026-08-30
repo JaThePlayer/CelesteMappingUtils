@@ -10,10 +10,14 @@ public class MappingUtilsModuleSettings : EverestModuleSettings
     [DefaultButtonBinding(0, Keys.NumPad3)]
     public ButtonBinding OpenMenu { get; set; } = null!;
 
+    [SettingIgnore]
     public List<HookedMethod> ProfilerHookedMethods { get; set; } = new()
     {
         new("BloomRenderer.Apply", typeof(BloomRenderer).GetMethod(nameof(BloomRenderer.Apply))!)
     };
+
+    [SettingIgnore]
+    public List<string> WatchedSessionExpressions { get; set; } = [];
 
     public class HookedMethod
     {

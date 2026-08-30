@@ -18,6 +18,7 @@ public class MainMappingUtils : ImGuiHandler
         new HooksTab(),
         new ParticleTab(),
         new GcTab(),
+        new SessionExpressionTab(),
         // new LogTab(), //- not quite there yet, doesn't live reload :/
         //new EntitiesTab(), // not sure how useful this is yet
     ];

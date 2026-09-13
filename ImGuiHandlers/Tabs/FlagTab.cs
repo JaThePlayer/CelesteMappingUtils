@@ -26,11 +26,11 @@ internal class FlagTab : Tab
         ImGui.TableSetupColumn("Flag", ImGuiTableColumnFlags.NoHide | ImGuiTableColumnFlags.WidthStretch);
         ImGui.TableHeadersRow();
         
-        foreach (var f in _sort ? flags.OrderBy(x=>x) : (IEnumerable<string>)flags)
+        foreach (var f in _sort ? flags.OrderBy(x=>x) : (IEnumerable<string?>)flags)
         {
             ImGui.TableNextColumn();
             ImGui.SetNextItemWidth(ItemWidth);
-            if (ImGui.Selectable(f))
+            if (ImGui.Selectable(f ?? "<NULL, some mod is bugged!>"))
             {
                 level.OnEndOfFrame += () => level.Session.SetFlag(f, false);
             }

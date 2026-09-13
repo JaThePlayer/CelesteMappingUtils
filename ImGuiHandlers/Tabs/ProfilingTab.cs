@@ -261,9 +261,9 @@ internal class ProfilingTab : Tab
         ArbitraryHooks.Clear();
     }
 
-    private static Info BeginFor(object entity)
+    private static Info BeginFor(object? obj)
     {
-        var info = CurrentInfo.GetFor(entity.GetType());
+        var info = CurrentInfo.GetFor(obj?.GetType());
         info.Begin();
 
         return info;
@@ -524,8 +524,15 @@ internal class ProfilingTab : Tab
             return GetFor(t);
         }
 
-        public Info GetFor(Type t)
+        public Info GetFor(Type? t)
         {
+            // While t can never be null in a valid state, some mods do things cursed enough to cause it to be null.
+            // We'll discard profiling info for such cases instead of crashing, oh well.
+            if (t is null)
+            {
+                return Info.UnknownInfo;
+            }
+            
             if (!EntityInfo.TryGetValue(t, out var info))
             {
                 info = new Info();
@@ -538,6 +545,8 @@ internal class ProfilingTab : Tab
 
     public class Info
     {
+        internal static readonly Info UnknownInfo = new Info();
+        
         public Section Update = new();
         public Section Render = new();
         public Section BeforeRender = new();
